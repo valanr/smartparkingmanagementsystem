@@ -12,7 +12,7 @@ import java.util.List;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "SmartParking.db";
-    private static final int DATABASE_VERSION = 8;
+    private static final int DATABASE_VERSION = 9;
 
     // Enterprises Table
     private static final String TABLE_ENTERPRISES = "enterprises";
@@ -23,6 +23,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_ENT_BIKE_RATE = "bike_rate";
     private static final String COLUMN_ENT_CAR_RATE = "car_rate";
     private static final String COLUMN_ENT_ADMIN_EMAIL = "admin_email";
+    private static final String COLUMN_ENT_PASSWORD = "password";
 
     // Slots Table
     private static final String TABLE_SLOTS = "parking_slots";
@@ -78,7 +79,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COLUMN_ENT_ADDRESS + " TEXT, "
                 + COLUMN_ENT_BIKE_RATE + " INTEGER, "
                 + COLUMN_ENT_CAR_RATE + " INTEGER, "
-                + COLUMN_ENT_ADMIN_EMAIL + " TEXT)";
+                + COLUMN_ENT_ADMIN_EMAIL + " TEXT UNIQUE, "
+                + COLUMN_ENT_PASSWORD + " TEXT DEFAULT 'admin123')";
         db.execSQL(createEnterprisesTableQuery);
 
         String createSlotsTableQuery = "CREATE TABLE " + TABLE_SLOTS + " ("
@@ -140,23 +142,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     private void populateDefaultEnterprisesAndSlots(SQLiteDatabase db) {
         // 1. Nexus Shopping Mall
-        insertEnterprise(db, "ent_nexus_mall", "Nexus Shopping Mall", "Shopping Mall", "MG Road, Central Zone", 10, 20, "nexus@parksmart.com");
-        populateSlotsForEnterprise(db, "ent_nexus_mall", "Nexus Shopping Mall");
+        insertEnterprise(db, "ent_nexus_mall", "Nexus Shopping Mall", "Shopping Mall", "MG Road, Central Zone", 10, 20, "nexus@parksmart.com", "admin123");
+        populateSlotsForEnterprise(db, "ent_nexus_mall", "Nexus Shopping Mall", 6, 6);
 
         // 2. Grand Hyatt Restaurant
-        insertEnterprise(db, "ent_grand_hyatt", "Grand Hyatt Fine Dining", "Restaurant & Hotel", "Park Avenue, South Bay", 15, 30, "hyatt@parksmart.com");
-        populateSlotsForEnterprise(db, "ent_grand_hyatt", "Grand Hyatt Fine Dining");
+        insertEnterprise(db, "ent_grand_hyatt", "Grand Hyatt Fine Dining", "Restaurant & Hotel", "Park Avenue, South Bay", 15, 30, "hyatt@parksmart.com", "admin123");
+        populateSlotsForEnterprise(db, "ent_grand_hyatt", "Grand Hyatt Fine Dining", 6, 6);
 
         // 3. PVR IMAX Multiplex
-        insertEnterprise(db, "ent_pvr_imax", "PVR IMAX Multiplex", "Cinema & Entertainment", "City Center Plaza", 10, 25, "pvr@parksmart.com");
-        populateSlotsForEnterprise(db, "ent_pvr_imax", "PVR IMAX Multiplex");
+        insertEnterprise(db, "ent_pvr_imax", "PVR IMAX Multiplex", "Cinema & Entertainment", "City Center Plaza", 10, 25, "pvr@parksmart.com", "admin123");
+        populateSlotsForEnterprise(db, "ent_pvr_imax", "PVR IMAX Multiplex", 6, 6);
 
         // 4. TechPark Towers
-        insertEnterprise(db, "ent_techpark", "TechPark Commercial Towers", "Commercial Office", "IT Highway Corridor", 10, 20, "admin@parksmart.com");
-        populateSlotsForEnterprise(db, "ent_techpark", "TechPark Commercial Towers");
+        insertEnterprise(db, "ent_techpark", "TechPark Commercial Towers", "Commercial Office", "IT Highway Corridor", 10, 20, "techpark@parksmart.com", "admin123");
+        populateSlotsForEnterprise(db, "ent_techpark", "TechPark Commercial Towers", 6, 6);
     }
 
-    private void insertEnterprise(SQLiteDatabase db, String id, String name, String category, String address, int bikeRate, int carRate, String adminEmail) {
+    private void insertEnterprise(SQLiteDatabase db, String id, String name, String category, String address, int bikeRate, int carRate, String adminEmail, String password) {
         ContentValues cv = new ContentValues();
         cv.put(COLUMN_ENT_ID, id);
         cv.put(COLUMN_ENT_NAME, name);
@@ -165,12 +167,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cv.put(COLUMN_ENT_BIKE_RATE, bikeRate);
         cv.put(COLUMN_ENT_CAR_RATE, carRate);
         cv.put(COLUMN_ENT_ADMIN_EMAIL, adminEmail);
+        cv.put(COLUMN_ENT_PASSWORD, password);
         db.insertWithOnConflict(TABLE_ENTERPRISES, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
     }
 
-    private void populateSlotsForEnterprise(SQLiteDatabase db, String entId, String entName) {
-        for (int i = 1; i <= 6; i++) {
-            // Bikes
+    private void populateSlotsForEnterprise(SQLiteDatabase db, String entId, String entName, int bikeCount, int carCount) {
+        for (int i = 1; i <= bikeCount; i++) {
             ContentValues cvB = new ContentValues();
             cvB.put(COLUMN_SLOT_NUMBER, i);
             cvB.put(COLUMN_VEHICLE_TYPE, TYPE_BIKE);
@@ -186,8 +188,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             cvB.put(COLUMN_ENTERPRISE_ID, entId);
             cvB.put(COLUMN_ENTERPRISE_NAME, entName);
             db.insert(TABLE_SLOTS, null, cvB);
+        }
 
-            // Cars
+        for (int i = 1; i <= carCount; i++) {
             ContentValues cvC = new ContentValues();
             cvC.put(COLUMN_SLOT_NUMBER, i);
             cvC.put(COLUMN_VEHICLE_TYPE, TYPE_CAR);
@@ -206,6 +209,49 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    public boolean registerNewEnterprise(Enterprise enterprise, int initialBikeSlots, int initialCarSlots) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        cv.put(COLUMN_ENT_ID, enterprise.getId());
+        cv.put(COLUMN_ENT_NAME, enterprise.getName());
+        cv.put(COLUMN_ENT_CATEGORY, enterprise.getCategory());
+        cv.put(COLUMN_ENT_ADDRESS, enterprise.getAddress());
+        cv.put(COLUMN_ENT_BIKE_RATE, enterprise.getBikeRate());
+        cv.put(COLUMN_ENT_CAR_RATE, enterprise.getCarRate());
+        cv.put(COLUMN_ENT_ADMIN_EMAIL, enterprise.getAdminEmail());
+        cv.put(COLUMN_ENT_PASSWORD, enterprise.getPassword());
+
+        long rowId = db.insertWithOnConflict(TABLE_ENTERPRISES, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
+        if (rowId != -1) {
+            populateSlotsForEnterprise(db, enterprise.getId(), enterprise.getName(), initialBikeSlots, initialCarSlots);
+            FirebaseHelper.getInstance().syncEnterpriseToCloud(enterprise);
+            return true;
+        }
+        return false;
+    }
+
+    public Enterprise authenticateEnterpriseAdmin(String email, String password) {
+        if (email == null || email.trim().isEmpty() || password == null) return null;
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_ENTERPRISES + " WHERE LOWER(" + COLUMN_ENT_ADMIN_EMAIL + ") = ? AND " + COLUMN_ENT_PASSWORD + " = ?", new String[]{email.trim().toLowerCase(), password.trim()});
+        Enterprise ent = null;
+        if (cursor.moveToFirst()) {
+            String id = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ID));
+            String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_NAME));
+            String category = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_CATEGORY));
+            String address = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ADDRESS));
+            int bikeRate = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENT_BIKE_RATE));
+            int carRate = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENT_CAR_RATE));
+            String adminEmail = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ADMIN_EMAIL));
+            String pwd = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_PASSWORD));
+
+            ent = new Enterprise(id, name, category, address, bikeRate, carRate, adminEmail, pwd);
+        }
+        cursor.close();
+        return ent;
+    }
+
     public List<Enterprise> getAllEnterprises() {
         List<Enterprise> list = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
@@ -219,8 +265,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 int bikeRate = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENT_BIKE_RATE));
                 int carRate = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENT_CAR_RATE));
                 String adminEmail = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ADMIN_EMAIL));
+                String pwd = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_PASSWORD));
 
-                list.add(new Enterprise(id, name, category, address, bikeRate, carRate, adminEmail));
+                list.add(new Enterprise(id, name, category, address, bikeRate, carRate, adminEmail, pwd));
             } while (cursor.moveToNext());
         }
         cursor.close();
@@ -257,8 +304,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 int bikeRate = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENT_BIKE_RATE));
                 int carRate = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENT_CAR_RATE));
                 String adminEmail = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ADMIN_EMAIL));
+                String pwd = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_PASSWORD));
 
-                list.add(new Enterprise(id, name, category, address, bikeRate, carRate, adminEmail));
+                list.add(new Enterprise(id, name, category, address, bikeRate, carRate, adminEmail, pwd));
             } while (cursor.moveToNext());
         }
         cursor.close();
@@ -277,11 +325,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             int bikeRate = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENT_BIKE_RATE));
             int carRate = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENT_CAR_RATE));
             String adminEmail = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ADMIN_EMAIL));
+            String pwd = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_PASSWORD));
 
-            ent = new Enterprise(id, name, category, address, bikeRate, carRate, adminEmail);
+            ent = new Enterprise(id, name, category, address, bikeRate, carRate, adminEmail, pwd);
         }
         cursor.close();
-        return ent != null ? ent : new Enterprise("ent_nexus_mall", "Nexus Shopping Mall", "Shopping Mall", "MG Road, Central Zone", 10, 20, "nexus@parksmart.com");
+        return ent != null ? ent : new Enterprise("ent_nexus_mall", "Nexus Shopping Mall", "Shopping Mall", "MG Road, Central Zone", 10, 20, "nexus@parksmart.com", "admin123");
     }
 
     public int getAvailableSlotCountForEnterprise(String enterpriseId, String vehicleType) {

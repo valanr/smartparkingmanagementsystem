@@ -15,6 +15,7 @@ import java.util.Locale;
 
 public class AdminLoginActivity extends AppCompatActivity {
 
+    private DatabaseHelper dbHelper;
     private SessionManager sessionManager;
 
     private TextInputLayout tilAdminEmail;
@@ -28,6 +29,7 @@ public class AdminLoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_login);
 
+        dbHelper = new DatabaseHelper(this);
         sessionManager = new SessionManager(this);
 
         tilAdminEmail = findViewById(R.id.tilAdminEmail);
@@ -37,9 +39,16 @@ public class AdminLoginActivity extends AppCompatActivity {
         etAdminPassword = findViewById(R.id.etAdminPassword);
 
         Button btnAdminLoginSubmit = findViewById(R.id.btnAdminLoginSubmit);
+        Button btnOpenEntRegister = findViewById(R.id.btnOpenEntRegister);
         Button btnBackToUserPortal = findViewById(R.id.btnBackToUserPortal);
 
         btnBackToUserPortal.setOnClickListener(v -> finish());
+
+        if (btnOpenEntRegister != null) {
+            btnOpenEntRegister.setOnClickListener(v -> {
+                startActivity(new Intent(this, EnterpriseRegisterActivity.class));
+            });
+        }
 
         btnAdminLoginSubmit.setOnClickListener(v -> handleAdminLogin());
     }
@@ -74,6 +83,12 @@ public class AdminLoginActivity extends AppCompatActivity {
             matchedEntId = "ent_techpark";
         } else if ("admin@parksmart.com".equals(email) && "admin123".equals(password)) {
             matchedEntId = "ent_nexus_mall";
+        } else {
+            // Dynamic check against database registered enterprise accounts
+            Enterprise registeredEnt = dbHelper.authenticateEnterpriseAdmin(email, password);
+            if (registeredEnt != null) {
+                matchedEntId = registeredEnt.getId();
+            }
         }
 
         if (matchedEntId != null) {

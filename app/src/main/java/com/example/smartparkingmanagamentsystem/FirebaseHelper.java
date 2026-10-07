@@ -36,6 +36,27 @@ public class FirebaseHelper {
         return instance;
     }
 
+    public void syncEnterpriseToCloud(Enterprise ent) {
+        if (db == null || ent == null) return;
+
+        String docId = ent.getId() != null && !ent.getId().isEmpty() ? ent.getId() : "ent_" + System.currentTimeMillis();
+
+        Map<String, Object> entData = new HashMap<>();
+        entData.put("id", ent.getId());
+        entData.put("name", ent.getName());
+        entData.put("category", ent.getCategory());
+        entData.put("address", ent.getAddress());
+        entData.put("bikeRate", ent.getBikeRate());
+        entData.put("carRate", ent.getCarRate());
+        entData.put("adminEmail", ent.getAdminEmail());
+
+        db.collection(COLLECTION_ENTERPRISES)
+                .document(docId)
+                .set(entData)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "Enterprise synced to Cloud: " + docId))
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to sync enterprise " + docId + " to Cloud: " + e.getMessage()));
+    }
+
     public void syncUserToCloud(User user) {
         if (db == null || user == null) return;
 

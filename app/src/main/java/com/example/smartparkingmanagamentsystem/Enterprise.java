@@ -8,8 +8,13 @@ public class Enterprise {
     private int bikeRate;
     private int carRate;
     private String adminEmail;
+    private String password;
 
     public Enterprise(String id, String name, String category, String address, int bikeRate, int carRate, String adminEmail) {
+        this(id, name, category, address, bikeRate, carRate, adminEmail, "admin123");
+    }
+
+    public Enterprise(String id, String name, String category, String address, int bikeRate, int carRate, String adminEmail, String password) {
         this.id = id;
         this.name = name;
         this.category = category;
@@ -17,6 +22,7 @@ public class Enterprise {
         this.bikeRate = bikeRate;
         this.carRate = carRate;
         this.adminEmail = adminEmail;
+        this.password = password != null && !password.isEmpty() ? password : "admin123";
     }
 
     public String getId() {
@@ -73,5 +79,13 @@ public class Enterprise {
 
     public void setAdminEmail(String adminEmail) {
         this.adminEmail = adminEmail;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }
