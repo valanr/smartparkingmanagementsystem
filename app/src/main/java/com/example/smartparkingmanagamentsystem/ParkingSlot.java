@@ -10,12 +10,18 @@ public class ParkingSlot {
     private long entryTime;
     private String paymentId;
     private String paymentStatus;
+    private String floorZone; // e.g. "Basement B1", "Floor 1", "Level 2"
+    private String slotCode;  // e.g. "A-101", "B2-05", "Slot 1"
 
     public ParkingSlot(int slotNumber, String vehicleType, boolean isOccupied, String vehicleNumber, String phoneNumber, int bookingHours, long entryTime) {
-        this(slotNumber, vehicleType, isOccupied, vehicleNumber, phoneNumber, bookingHours, entryTime, "", "UNPAID");
+        this(slotNumber, vehicleType, isOccupied, vehicleNumber, phoneNumber, bookingHours, entryTime, "", "UNPAID", "Floor 1", "Slot " + slotNumber);
     }
 
     public ParkingSlot(int slotNumber, String vehicleType, boolean isOccupied, String vehicleNumber, String phoneNumber, int bookingHours, long entryTime, String paymentId, String paymentStatus) {
+        this(slotNumber, vehicleType, isOccupied, vehicleNumber, phoneNumber, bookingHours, entryTime, paymentId, paymentStatus, "Floor 1", "Slot " + slotNumber);
+    }
+
+    public ParkingSlot(int slotNumber, String vehicleType, boolean isOccupied, String vehicleNumber, String phoneNumber, int bookingHours, long entryTime, String paymentId, String paymentStatus, String floorZone, String slotCode) {
         this.slotNumber = slotNumber;
         this.vehicleType = vehicleType;
         this.isOccupied = isOccupied;
@@ -25,6 +31,8 @@ public class ParkingSlot {
         this.entryTime = entryTime;
         this.paymentId = paymentId;
         this.paymentStatus = paymentStatus;
+        this.floorZone = floorZone != null && !floorZone.isEmpty() ? floorZone : "Floor 1";
+        this.slotCode = slotCode != null && !slotCode.isEmpty() ? slotCode : "Slot " + slotNumber;
     }
 
     public int getSlotNumber() {
@@ -97,6 +105,22 @@ public class ParkingSlot {
 
     public void setPaymentStatus(String paymentStatus) {
         this.paymentStatus = paymentStatus;
+    }
+
+    public String getFloorZone() {
+        return floorZone;
+    }
+
+    public void setFloorZone(String floorZone) {
+        this.floorZone = floorZone;
+    }
+
+    public String getSlotCode() {
+        return slotCode;
+    }
+
+    public void setSlotCode(String slotCode) {
+        this.slotCode = slotCode;
     }
 
     public long getExpiryTime() {

@@ -38,6 +38,14 @@
             android:name=".HistoryActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".AdminSlotManagerActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ParkingMapActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

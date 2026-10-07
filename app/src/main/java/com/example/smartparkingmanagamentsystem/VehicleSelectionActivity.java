@@ -29,10 +29,11 @@ public class VehicleSelectionActivity extends AppCompatActivity {
     private TextView tvUserProfileVehicle;
     private TextView tvUserProfilePhone;
 
-    // Active Ticket Shortcut Views
+    // Active Ticket Shortcut & Capacity Views
     private MaterialCardView cardActiveTicketShortcut;
     private TextView tvShortcutDetails;
     private Button btnViewActiveTicket;
+    private Button btnManageSlotCapacity;
 
     // Real-time Ticker Handler
     private final Handler tickerHandler = new Handler(Looper.getMainLooper());
@@ -58,10 +59,11 @@ public class VehicleSelectionActivity extends AppCompatActivity {
         tvUserProfileVehicle = findViewById(R.id.tvUserProfileVehicle);
         tvUserProfilePhone = findViewById(R.id.tvUserProfilePhone);
 
-        // Active Ticket Shortcut
+        // Active Ticket Shortcut & Admin Capacity Button
         cardActiveTicketShortcut = findViewById(R.id.cardActiveTicketShortcut);
         tvShortcutDetails = findViewById(R.id.tvShortcutDetails);
         btnViewActiveTicket = findViewById(R.id.btnViewActiveTicket);
+        btnManageSlotCapacity = findViewById(R.id.btnManageSlotCapacity);
 
         MaterialCardView cardTwoWheeler = findViewById(R.id.cardTwoWheeler);
         MaterialCardView cardFourWheeler = findViewById(R.id.cardFourWheeler);
@@ -70,6 +72,13 @@ public class VehicleSelectionActivity extends AppCompatActivity {
         Button btnUserHistory = findViewById(R.id.btnUserHistory);
         Button btnAdminPortal = findViewById(R.id.btnAdminPortal);
         ImageButton btnLogout = findViewById(R.id.btnLogout);
+
+        if (btnManageSlotCapacity != null) {
+            btnManageSlotCapacity.setOnClickListener(v -> {
+                Intent intent = new Intent(this, AdminSlotManagerActivity.class);
+                startActivity(intent);
+            });
+        }
 
         cardTwoWheeler.setOnClickListener(v -> openParkingSlots(DatabaseHelper.TYPE_BIKE));
         btnSelectBike.setOnClickListener(v -> openParkingSlots(DatabaseHelper.TYPE_BIKE));
@@ -119,11 +128,17 @@ public class VehicleSelectionActivity extends AppCompatActivity {
                 if (cardActiveTicketShortcut != null) {
                     cardActiveTicketShortcut.setVisibility(View.GONE);
                 }
+                if (btnManageSlotCapacity != null) {
+                    btnManageSlotCapacity.setVisibility(View.VISIBLE);
+                }
             } else {
                 tvWelcomeUser.setText("Welcome, " + sessionManager.getUserName() + "!");
                 String typeIcon = DatabaseHelper.TYPE_BIKE.equalsIgnoreCase(sessionManager.getUserVehicleType()) ? "🏍️ Bike: " : "🚗 Car: ";
                 tvUserProfileVehicle.setText(typeIcon + sessionManager.getUserVehicleNumber());
                 tvUserProfilePhone.setText("📞 +91 " + sessionManager.getUserPhone());
+                if (btnManageSlotCapacity != null) {
+                    btnManageSlotCapacity.setVisibility(View.GONE);
+                }
 
                 // Auto-sync active user session
                 User currentUser = new User(0, sessionManager.getUserName(), sessionManager.getUserEmail(), sessionManager.getUserPhone(), sessionManager.getUserVehicleNumber(), sessionManager.getUserVehicleType(), System.currentTimeMillis());
@@ -138,6 +153,9 @@ public class VehicleSelectionActivity extends AppCompatActivity {
             tvUserProfilePhone.setText("");
             if (cardActiveTicketShortcut != null) {
                 cardActiveTicketShortcut.setVisibility(View.GONE);
+            }
+            if (btnManageSlotCapacity != null) {
+                btnManageSlotCapacity.setVisibility(View.GONE);
             }
         }
     }

@@ -132,8 +132,17 @@ public class MainActivity extends AppCompatActivity {
         tvSelectedSlotsCount = findViewById(R.id.tvSelectedSlotsCount);
         tvClearSelection = findViewById(R.id.tvClearSelection);
         Button btnBookSelectedSlots = findViewById(R.id.btnBookSelectedSlots);
+        Button btnOpenFloorMap = findViewById(R.id.btnOpenFloorMap);
 
         btnBackToSelection.setOnClickListener(v -> finish());
+
+        if (btnOpenFloorMap != null) {
+            btnOpenFloorMap.setOnClickListener(v -> {
+                Intent intent = new Intent(this, ParkingMapActivity.class);
+                intent.putExtra(VehicleSelectionActivity.EXTRA_VEHICLE_TYPE, currentVehicleType);
+                startActivity(intent);
+            });
+        }
 
         if (DatabaseHelper.TYPE_BIKE.equalsIgnoreCase(currentVehicleType)) {
             tvHeaderTitle.setText("🏍️ Two Wheeler Parking");
@@ -412,16 +421,16 @@ public class MainActivity extends AppCompatActivity {
         Button btnCancelBook = dialogView.findViewById(R.id.btnCancelBook);
         Button btnConfirmBook = dialogView.findViewById(R.id.btnConfirmBook);
 
-        tvBookSlotTitle.setText("Book Slot #" + slot.getSlotNumber() + " (" + currentVehicleType + ")");
+        tvBookSlotTitle.setText("Book " + slot.getSlotCode() + " (" + currentVehicleType + ")");
         tvEstimatedFee.setText("₹" + hourlyRate);
 
         if (sessionManager != null && sessionManager.isLoggedIn()) {
             if (sessionManager.isAdmin()) {
-                tvRateNotice.setText("Manager Mode: ₹" + hourlyRate + "/hr");
+                tvRateNotice.setText("Manager Mode: ₹" + hourlyRate + "/hr (" + slot.getFloorZone() + ")");
             } else {
                 String userType = sessionManager.getUserVehicleType();
                 if (userType.equalsIgnoreCase(currentVehicleType)) {
-                    tvRateNotice.setText("Standard Rate: ₹" + hourlyRate + " / Hour");
+                    tvRateNotice.setText("Zone: " + slot.getFloorZone() + " | Rate: ₹" + hourlyRate + " / Hour");
                     if (sessionManager.getUserVehicleNumber() != null && !sessionManager.getUserVehicleNumber().isEmpty()) {
                         etVehicleNumber.setText(sessionManager.getUserVehicleNumber());
                     }
@@ -429,14 +438,14 @@ public class MainActivity extends AppCompatActivity {
                         etPhoneNumber.setText(sessionManager.getUserPhone());
                     }
                 } else {
-                    tvRateNotice.setText("⚠️ Your profile is registered as " + userType + ". Enter " + currentVehicleType + " number manually.");
+                    tvRateNotice.setText("⚠️ Profile vehicle is " + userType + ". Enter " + currentVehicleType + " number.");
                     if (sessionManager.getUserPhone() != null && !sessionManager.getUserPhone().isEmpty()) {
                         etPhoneNumber.setText(sessionManager.getUserPhone());
                     }
                 }
             }
         } else {
-            tvRateNotice.setText("Standard Rate: ₹" + hourlyRate + " / Hour");
+            tvRateNotice.setText("Zone: " + slot.getFloorZone() + " | Rate: ₹" + hourlyRate + " / Hour");
         }
 
         etBookingHours.addTextChangedListener(new TextWatcher() {
@@ -714,7 +723,7 @@ public class MainActivity extends AppCompatActivity {
         Button btnCheckout = dialogView.findViewById(R.id.btnCheckout);
         Button btnEmergencyDelete = dialogView.findViewById(R.id.btnEmergencyDelete);
 
-        tvTicketTitle.setText("Active Ticket - Slot #" + slot.getSlotNumber() + " (" + currentVehicleType + ")");
+        tvTicketTitle.setText("Active Ticket - " + slot.getSlotCode() + " (" + slot.getFloorZone() + ")");
         tvTicketVehicle.setText("Vehicle: " + slot.getVehicleNumber());
 
         String phone = slot.getPhoneNumber();
@@ -747,7 +756,7 @@ public class MainActivity extends AppCompatActivity {
         btnCheckout.setOnClickListener(v -> {
             boolean success = dbHelper.leaveSlotAndRecordHistory(slot, totalFee);
             if (success) {
-                Toast.makeText(MainActivity.this, "Slot #" + slot.getSlotNumber() + " checked out! Record saved to history.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "Slot " + slot.getSlotCode() + " checked out! Record saved to history.", Toast.LENGTH_SHORT).show();
                 loadSlotsData();
                 dialog.dismiss();
             } else {
@@ -804,7 +813,7 @@ public class MainActivity extends AppCompatActivity {
             String selectedReason = (String) spinnerViolationReason.getSelectedItem();
             boolean success = dbHelper.emergencyReleaseSlot(slot, selectedReason, capturedProofPath);
             if (success) {
-                Toast.makeText(MainActivity.this, "Slot #" + slot.getSlotNumber() + " forcibly released per Parking Association Rules!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "Slot " + slot.getSlotCode() + " forcibly released per Parking Association Rules!", Toast.LENGTH_SHORT).show();
                 loadSlotsData();
                 releaseDialog.dismiss();
                 if (ticketDialog != null) {

@@ -118,7 +118,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Active Booking Shortcut Card (Visible when user has active booking) -->
+            <!-- Active Booking Shortcut Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardActiveTicketShortcut"
                 android:layout_width="match_parent"
@@ -383,13 +383,28 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Admin Manage Capacity Button (Visible if Admin) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnManageSlotCapacity"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:backgroundTint="@color/slate_900"
+                android:paddingVertical="12dp"
+                android:text="⚙️  Building Slots CRUD Manager"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:visibility="gone"
+                app:cornerRadius="12dp" />
+
             <!-- User History Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnUserHistory"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="12dp"
                 android:paddingVertical="12dp"
                 android:text="📜  My Booking Receipts"
                 android:textColor="@color/slate_900"

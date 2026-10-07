@@ -65,6 +65,19 @@
                         android:textSize="12sp" />
                 </LinearLayout>
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOpenFloorMap"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="10dp"
+                    android:text="🗺️ Floor Map"
+                    android:textColor="@color/white"
+                    android:textSize="11sp"
+                    app:cornerRadius="8dp"
+                    app:strokeColor="@color/white"
+                    app:strokeWidth="1dp" />
+
             </LinearLayout>
 
             <!-- Summary Badges -->
