@@ -11,7 +11,7 @@
         android:id="@+id/tvUpiDialogTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="📱 Google Pay / UPI Payment"
+        android:text="💳 Mock Payment Gateway"
         android:textColor="@color/slate_900"
         android:textSize="20sp"
         android:textStyle="bold" />
@@ -23,10 +23,10 @@
         android:layout_marginTop="4dp"
         android:text="Total Amount to Pay: ₹40"
         android:textColor="@color/accent_indigo"
-        android:textSize="15sp"
+        android:textSize="16sp"
         android:textStyle="bold" />
 
-    <!-- QR Code Card -->
+    <!-- Payment Gateway Options Card -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -40,65 +40,88 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
             android:orientation="vertical"
             android:padding="16dp">
 
-            <ImageView
-                android:id="@+id/imgUpiQrCode"
-                android:layout_width="180dp"
-                android:layout_height="180dp"
-                android:contentDescription="Google Pay QR Code"
-                android:scaleType="fitCenter"
-                android:src="@android:drawable/ic_menu_camera" />
-
             <TextView
-                android:id="@+id/tvUpiId"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/bg_rounded_badge"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="4dp"
-                android:text="UPI ID: parksmart@okaxis"
+                android:text="Select Payment Method (Simulated)"
                 android:textColor="@color/slate_900"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
+            <RadioGroup
+                android:id="@+id/rgPaymentMethods"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp">
+
+                <RadioButton
+                    android:id="@+id/rbPayUpi"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/accent_indigo"
+                    android:checked="true"
+                    android:paddingVertical="4dp"
+                    android:text="⚡ Instant UPI / GPay / PhonePe"
+                    android:textColor="@color/slate_900"
+                    android:textSize="14sp" />
+
+                <RadioButton
+                    android:id="@+id/rbPayCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/accent_indigo"
+                    android:paddingVertical="4dp"
+                    android:text="💳 Credit / Debit Card"
+                    android:textColor="@color/slate_900"
+                    android:textSize="14sp" />
+
+                <RadioButton
+                    android:id="@+id/rbPayNetBanking"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/accent_indigo"
+                    android:paddingVertical="4dp"
+                    android:text="🏦 NetBanking / Wallet"
+                    android:textColor="@color/slate_900"
+                    android:textSize="14sp" />
+            </RadioGroup>
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Accepted: Google Pay • PhonePe • Paytm • BHIM"
-                android:textColor="#64748B"
-                android:textSize="11sp" />
+                android:layout_marginTop="8dp"
+                android:text="✓ Fast 1-Tap Simulated Checkout for Testing"
+                android:textColor="@color/slot_available_text"
+                android:textSize="11sp"
+                android:textStyle="bold" />
 
         </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- UTR Input Field -->
+    <!-- Optional Reference Field -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilUtrNumber"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:hint="12-Digit UTR / Transaction Ref No."
+        android:hint="Transaction Reference (Optional)"
         app:boxStrokeColor="@color/slate_900"
-        app:counterEnabled="true"
-        app:counterMaxLength="12"
         app:hintTextColor="@color/slate_900">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etUtrNumber"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:maxLength="12"
+            android:inputType="textCapCharacters"
+            android:maxLength="15"
             android:maxLines="1"
             android:textColor="@color/slate_900"
-            android:textSize="15sp" />
+            android:textSize="14sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Action Buttons -->
@@ -123,7 +146,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:backgroundTint="@color/slate_900"
-            android:text="Confirm Payment &amp; Book →"
+            android:paddingHorizontal="16dp"
+            android:text="⚡ Pay &amp; Confirm Booking →"
             app:cornerRadius="8dp" />
     </LinearLayout>
 

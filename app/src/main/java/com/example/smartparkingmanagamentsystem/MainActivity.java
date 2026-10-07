@@ -246,7 +246,6 @@ public class MainActivity extends AppCompatActivity {
         AlertDialog upiDialog = builder.create();
 
         TextView tvUpiAmount = dialogView.findViewById(R.id.tvUpiAmount);
-        ImageView imgUpiQrCode = dialogView.findViewById(R.id.imgUpiQrCode);
         TextInputLayout tilUtrNumber = dialogView.findViewById(R.id.tilUtrNumber);
         EditText etUtrNumber = dialogView.findViewById(R.id.etUtrNumber);
         Button btnCancelUpi = dialogView.findViewById(R.id.btnCancelUpi);
@@ -254,28 +253,17 @@ public class MainActivity extends AppCompatActivity {
 
         tvUpiAmount.setText("Total Amount to Pay: ₹" + pending.totalFee);
 
-        // Check if custom user QR image 'gpay_qr' exists in res/drawable
-        int customQrResId = getResources().getIdentifier("gpay_qr", "drawable", getPackageName());
-        if (customQrResId != 0) {
-            imgUpiQrCode.setImageResource(customQrResId);
-        } else {
-            // Fallback to generated dynamic QR bitmap
-            String upiContent = "upi://pay?pa=parksmart@okaxis&pn=ParkSmartSystem&am=" + pending.totalFee + "&cu=INR";
-            Bitmap qrBitmap = QrGenerator.generateQrBitmap(upiContent, 300, 300);
-            imgUpiQrCode.setImageBitmap(qrBitmap);
-        }
-
         btnCancelUpi.setOnClickListener(v -> upiDialog.dismiss());
 
         btnConfirmUpiPayment.setOnClickListener(v -> {
-            tilUtrNumber.setError(null);
-            String utrNo = etUtrNumber.getText().toString().trim();
+            if (tilUtrNumber != null) tilUtrNumber.setError(null);
+            String utrNo = etUtrNumber != null && etUtrNumber.getText() != null ? etUtrNumber.getText().toString().trim() : "";
 
             if (utrNo.isEmpty()) {
                 utrNo = String.valueOf(System.currentTimeMillis()).substring(3);
             }
 
-            String paymentId = "UPI_" + utrNo;
+            String paymentId = "MOCK_PAY_" + utrNo;
             processSuccessfulBooking(pending, paymentId);
             upiDialog.dismiss();
         });
@@ -300,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (successCount > 0) {
-            Toast.makeText(this, "📱 UPI Payment Verified!\nRef ID: " + paymentId, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "💳 Mock Payment Successful!\nRef ID: " + paymentId, Toast.LENGTH_LONG).show();
             if (adapter != null) {
                 adapter.clearSelection();
             }
