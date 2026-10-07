@@ -71,7 +71,8 @@ public class ParkingSlotAdapter extends RecyclerView.Adapter<ParkingSlotAdapter.
         ParkingSlot slot = slotList.get(position);
         boolean isSelected = selectedSlotNumbers.contains(slot.getSlotNumber());
 
-        holder.tvSlotNumber.setText("Slot " + slot.getSlotNumber());
+        String displayName = slot.getSlotCode() != null && !slot.getSlotCode().isEmpty() ? slot.getSlotCode() : "Slot " + slot.getSlotNumber();
+        holder.tvSlotNumber.setText(displayName);
 
         if (slot.isOccupied()) {
             holder.tvSlotStatus.setText("OCCUPIED");
@@ -115,7 +116,7 @@ public class ParkingSlotAdapter extends RecyclerView.Adapter<ParkingSlotAdapter.
             holder.containerSlot.setBackgroundColor(ContextCompat.getColor(context, R.color.bike_bg));
             holder.cardSlot.setStrokeColor(ContextCompat.getColor(context, R.color.accent_indigo));
 
-            holder.tvVehicleInfo.setText("Tap to Deselect");
+            holder.tvVehicleInfo.setText("Tap to Book");
             holder.tvVehicleInfo.setTextColor(ContextCompat.getColor(context, R.color.accent_indigo_dark));
 
             holder.tvCountdown.setVisibility(View.GONE);
@@ -126,19 +127,18 @@ public class ParkingSlotAdapter extends RecyclerView.Adapter<ParkingSlotAdapter.
             holder.containerSlot.setBackgroundColor(ContextCompat.getColor(context, R.color.slot_available_bg));
             holder.cardSlot.setStrokeColor(ContextCompat.getColor(context, R.color.slot_available_stroke));
 
-            holder.tvVehicleInfo.setText("Tap to Select");
+            holder.tvVehicleInfo.setText("Tap to Book / Select");
             holder.tvVehicleInfo.setTextColor(ContextCompat.getColor(context, R.color.slate_900));
 
             holder.tvCountdown.setVisibility(View.GONE);
         }
 
         holder.itemView.setOnClickListener(v -> {
-            if (slot.isOccupied()) {
-                if (clickListener != null) {
-                    clickListener.onSlotClick(slot);
-                }
-            } else {
-                // Toggle selection for available slot
+            if (clickListener != null) {
+                clickListener.onSlotClick(slot);
+            }
+
+            if (!slot.isOccupied()) {
                 if (selectedSlotNumbers.contains(slot.getSlotNumber())) {
                     selectedSlotNumbers.remove(slot.getSlotNumber());
                 } else {

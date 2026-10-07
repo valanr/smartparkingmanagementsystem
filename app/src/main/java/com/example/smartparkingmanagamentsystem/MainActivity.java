@@ -203,7 +203,23 @@ public class MainActivity extends AppCompatActivity {
 
         btnBookSelectedSlots.setOnClickListener(v -> {
             if (adapter != null && !adapter.getSelectedSlotNumbers().isEmpty()) {
-                showBatchBookSlotDialog(adapter.getSelectedSlotNumbers());
+                if (adapter.getSelectedSlotNumbers().size() == 1) {
+                    int slotNum = adapter.getSelectedSlotNumbers().iterator().next();
+                    ParkingSlot targetSlot = null;
+                    for (ParkingSlot s : fullSlotList) {
+                        if (s.getSlotNumber() == slotNum) {
+                            targetSlot = s;
+                            break;
+                        }
+                    }
+                    if (targetSlot != null) {
+                        showSingleBookSlotDialog(targetSlot);
+                    } else {
+                        showBatchBookSlotDialog(adapter.getSelectedSlotNumbers());
+                    }
+                } else {
+                    showBatchBookSlotDialog(adapter.getSelectedSlotNumbers());
+                }
             }
         });
 
@@ -243,10 +259,8 @@ public class MainActivity extends AppCompatActivity {
             tilUtrNumber.setError(null);
             String utrNo = etUtrNumber.getText().toString().trim();
 
-            if (utrNo.isEmpty() || utrNo.length() < 6) {
-                tilUtrNumber.setError("Enter valid 12-digit UTR / Ref Number");
-                etUtrNumber.requestFocus();
-                return;
+            if (utrNo.isEmpty()) {
+                utrNo = String.valueOf(System.currentTimeMillis()).substring(3);
             }
 
             String paymentId = "UPI_" + utrNo;
