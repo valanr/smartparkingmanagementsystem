@@ -35,6 +35,9 @@ public class VehicleSelectionActivity extends AppCompatActivity {
     private Button btnViewActiveTicket;
     private Button btnManageSlotCapacity;
 
+    private String currentEnterpriseId = "ent_nexus_mall";
+    private Enterprise currentEnterprise;
+
     // Real-time Ticker Handler
     private final Handler tickerHandler = new Handler(Looper.getMainLooper());
     private final Runnable clockRunnable = new Runnable() {
@@ -52,6 +55,12 @@ public class VehicleSelectionActivity extends AppCompatActivity {
 
         dbHelper = new DatabaseHelper(this);
         sessionManager = new SessionManager(this);
+
+        if (getIntent() != null && getIntent().hasExtra(EnterpriseSearchActivity.EXTRA_ENTERPRISE_ID)) {
+            currentEnterpriseId = getIntent().getStringExtra(EnterpriseSearchActivity.EXTRA_ENTERPRISE_ID);
+        }
+
+        currentEnterprise = dbHelper.getEnterpriseById(currentEnterpriseId);
 
         tvBikeAvailableCount = findViewById(R.id.tvBikeAvailableCount);
         tvCarAvailableCount = findViewById(R.id.tvCarAvailableCount);
@@ -76,6 +85,7 @@ public class VehicleSelectionActivity extends AppCompatActivity {
         if (btnManageSlotCapacity != null) {
             btnManageSlotCapacity.setOnClickListener(v -> {
                 Intent intent = new Intent(this, AdminSlotManagerActivity.class);
+                intent.putExtra(EnterpriseSearchActivity.EXTRA_ENTERPRISE_ID, currentEnterpriseId);
                 startActivity(intent);
             });
         }
@@ -120,9 +130,11 @@ public class VehicleSelectionActivity extends AppCompatActivity {
     }
 
     private void loadUserProfile() {
+        String venueName = currentEnterprise != null ? currentEnterprise.getName() : "Nexus Shopping Mall";
+
         if (sessionManager.isLoggedIn()) {
             if (sessionManager.isAdmin()) {
-                tvWelcomeUser.setText("Welcome, Manager!");
+                tvWelcomeUser.setText("Welcome to " + venueName + "!");
                 tvUserProfileVehicle.setText("🔐 Role: Admin / Manager");
                 tvUserProfilePhone.setText("admin@parksmart.com");
                 if (cardActiveTicketShortcut != null) {
@@ -132,7 +144,7 @@ public class VehicleSelectionActivity extends AppCompatActivity {
                     btnManageSlotCapacity.setVisibility(View.VISIBLE);
                 }
             } else {
-                tvWelcomeUser.setText("Welcome, " + sessionManager.getUserName() + "!");
+                tvWelcomeUser.setText("Welcome to " + venueName + "!");
                 String typeIcon = DatabaseHelper.TYPE_BIKE.equalsIgnoreCase(sessionManager.getUserVehicleType()) ? "🏍️ Bike: " : "🚗 Car: ";
                 tvUserProfileVehicle.setText(typeIcon + sessionManager.getUserVehicleNumber());
                 tvUserProfilePhone.setText("📞 +91 " + sessionManager.getUserPhone());
@@ -148,7 +160,7 @@ public class VehicleSelectionActivity extends AppCompatActivity {
                 checkActiveUserShortcut();
             }
         } else {
-            tvWelcomeUser.setText("Welcome, Guest!");
+            tvWelcomeUser.setText("Welcome to " + venueName + "!");
             tvUserProfileVehicle.setText("🚘 No Vehicle Profile Set");
             tvUserProfilePhone.setText("");
             if (cardActiveTicketShortcut != null) {
@@ -170,7 +182,7 @@ public class VehicleSelectionActivity extends AppCompatActivity {
         if (!activeSlots.isEmpty()) {
             ParkingSlot activeSlot = activeSlots.get(0);
             cardActiveTicketShortcut.setVisibility(View.VISIBLE);
-            tvShortcutDetails.setText("Slot #" + activeSlot.getSlotNumber() + " (" + activeSlot.getVehicleType() + ") | Vehicle: " + activeSlot.getVehicleNumber());
+            tvShortcutDetails.setText("Venue: " + activeSlot.getEnterpriseName() + " | Slot #" + activeSlot.getSlotNumber() + " (" + activeSlot.getVehicleType() + ")");
 
             View.OnClickListener openShortcut = v -> openParkingSlots(activeSlot.getVehicleType());
             cardActiveTicketShortcut.setOnClickListener(openShortcut);
@@ -196,12 +208,12 @@ public class VehicleSelectionActivity extends AppCompatActivity {
     private void updateSlotCounters() {
         dbHelper.checkAndAutoCheckoutExpiredSlots();
 
-        int bikeOccupied = dbHelper.getOccupiedCountByType(DatabaseHelper.TYPE_BIKE);
-        int bikeTotal = dbHelper.getTotalCountByType(DatabaseHelper.TYPE_BIKE);
+        int bikeOccupied = dbHelper.getOccupiedCountByEnterpriseAndType(currentEnterpriseId, DatabaseHelper.TYPE_BIKE);
+        int bikeTotal = dbHelper.getTotalCountByEnterpriseAndType(currentEnterpriseId, DatabaseHelper.TYPE_BIKE);
         int bikeAvailable = bikeTotal - bikeOccupied;
 
-        int carOccupied = dbHelper.getOccupiedCountByType(DatabaseHelper.TYPE_CAR);
-        int carTotal = dbHelper.getTotalCountByType(DatabaseHelper.TYPE_CAR);
+        int carOccupied = dbHelper.getOccupiedCountByEnterpriseAndType(currentEnterpriseId, DatabaseHelper.TYPE_CAR);
+        int carTotal = dbHelper.getTotalCountByEnterpriseAndType(currentEnterpriseId, DatabaseHelper.TYPE_CAR);
         int carAvailable = carTotal - carOccupied;
 
         tvBikeAvailableCount.setText(bikeAvailable + " / " + bikeTotal + " Slots Available");
@@ -215,6 +227,7 @@ public class VehicleSelectionActivity extends AppCompatActivity {
     private void openParkingSlots(String vehicleType) {
         Intent intent = new Intent(this, MainActivity.class);
         intent.putExtra(EXTRA_VEHICLE_TYPE, vehicleType);
+        intent.putExtra(EnterpriseSearchActivity.EXTRA_ENTERPRISE_ID, currentEnterpriseId);
         startActivity(intent);
     }
 }

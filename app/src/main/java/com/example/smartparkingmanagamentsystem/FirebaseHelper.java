@@ -15,6 +15,7 @@ public class FirebaseHelper {
     private static final String COLLECTION_SLOTS = "parking_slots";
     private static final String COLLECTION_HISTORY = "parking_history";
     private static final String COLLECTION_USERS = "users";
+    private static final String COLLECTION_ENTERPRISES = "enterprises";
 
     private static FirebaseHelper instance;
     private FirebaseFirestore db;
@@ -59,7 +60,8 @@ public class FirebaseHelper {
     public void syncSlotToCloud(ParkingSlot slot) {
         if (db == null || slot == null) return;
 
-        String docId = slot.getVehicleType() + "_slot_" + slot.getSlotNumber();
+        String entId = slot.getEnterpriseId() != null && !slot.getEnterpriseId().isEmpty() ? slot.getEnterpriseId() : "ent_nexus_mall";
+        String docId = entId + "_" + slot.getVehicleType() + "_slot_" + slot.getSlotNumber();
 
         Map<String, Object> slotData = new HashMap<>();
         slotData.put("slotNumber", slot.getSlotNumber());
@@ -71,6 +73,10 @@ public class FirebaseHelper {
         slotData.put("entryTime", slot.getEntryTime());
         slotData.put("paymentId", slot.getPaymentId() != null ? slot.getPaymentId() : "");
         slotData.put("paymentStatus", slot.getPaymentStatus() != null ? slot.getPaymentStatus() : "UNPAID");
+        slotData.put("floorZone", slot.getFloorZone());
+        slotData.put("slotCode", slot.getSlotCode());
+        slotData.put("enterpriseId", entId);
+        slotData.put("enterpriseName", slot.getEnterpriseName());
         slotData.put("lastUpdated", System.currentTimeMillis());
 
         db.collection(COLLECTION_SLOTS)

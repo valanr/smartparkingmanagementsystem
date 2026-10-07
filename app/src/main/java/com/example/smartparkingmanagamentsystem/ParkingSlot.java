@@ -12,16 +12,22 @@ public class ParkingSlot {
     private String paymentStatus;
     private String floorZone; // e.g. "Basement B1", "Floor 1", "Level 2"
     private String slotCode;  // e.g. "A-101", "B2-05", "Slot 1"
+    private String enterpriseId; // e.g. "ent_nexus_mall"
+    private String enterpriseName; // e.g. "Nexus Shopping Mall"
 
     public ParkingSlot(int slotNumber, String vehicleType, boolean isOccupied, String vehicleNumber, String phoneNumber, int bookingHours, long entryTime) {
-        this(slotNumber, vehicleType, isOccupied, vehicleNumber, phoneNumber, bookingHours, entryTime, "", "UNPAID", "Floor 1", "Slot " + slotNumber);
+        this(slotNumber, vehicleType, isOccupied, vehicleNumber, phoneNumber, bookingHours, entryTime, "", "UNPAID", "Floor 1", "Slot " + slotNumber, "ent_nexus_mall", "Nexus Shopping Mall");
     }
 
     public ParkingSlot(int slotNumber, String vehicleType, boolean isOccupied, String vehicleNumber, String phoneNumber, int bookingHours, long entryTime, String paymentId, String paymentStatus) {
-        this(slotNumber, vehicleType, isOccupied, vehicleNumber, phoneNumber, bookingHours, entryTime, paymentId, paymentStatus, "Floor 1", "Slot " + slotNumber);
+        this(slotNumber, vehicleType, isOccupied, vehicleNumber, phoneNumber, bookingHours, entryTime, paymentId, paymentStatus, "Floor 1", "Slot " + slotNumber, "ent_nexus_mall", "Nexus Shopping Mall");
     }
 
     public ParkingSlot(int slotNumber, String vehicleType, boolean isOccupied, String vehicleNumber, String phoneNumber, int bookingHours, long entryTime, String paymentId, String paymentStatus, String floorZone, String slotCode) {
+        this(slotNumber, vehicleType, isOccupied, vehicleNumber, phoneNumber, bookingHours, entryTime, paymentId, paymentStatus, floorZone, slotCode, "ent_nexus_mall", "Nexus Shopping Mall");
+    }
+
+    public ParkingSlot(int slotNumber, String vehicleType, boolean isOccupied, String vehicleNumber, String phoneNumber, int bookingHours, long entryTime, String paymentId, String paymentStatus, String floorZone, String slotCode, String enterpriseId, String enterpriseName) {
         this.slotNumber = slotNumber;
         this.vehicleType = vehicleType;
         this.isOccupied = isOccupied;
@@ -33,6 +39,8 @@ public class ParkingSlot {
         this.paymentStatus = paymentStatus;
         this.floorZone = floorZone != null && !floorZone.isEmpty() ? floorZone : "Floor 1";
         this.slotCode = slotCode != null && !slotCode.isEmpty() ? slotCode : "Slot " + slotNumber;
+        this.enterpriseId = enterpriseId != null && !enterpriseId.isEmpty() ? enterpriseId : "ent_nexus_mall";
+        this.enterpriseName = enterpriseName != null && !enterpriseName.isEmpty() ? enterpriseName : "Nexus Shopping Mall";
     }
 
     public int getSlotNumber() {
@@ -121,6 +129,22 @@ public class ParkingSlot {
 
     public void setSlotCode(String slotCode) {
         this.slotCode = slotCode;
+    }
+
+    public String getEnterpriseId() {
+        return enterpriseId;
+    }
+
+    public void setEnterpriseId(String enterpriseId) {
+        this.enterpriseId = enterpriseId;
+    }
+
+    public String getEnterpriseName() {
+        return enterpriseName;
+    }
+
+    public void setEnterpriseName(String enterpriseName) {
+        this.enterpriseName = enterpriseName;
     }
 
     public long getExpiryTime() {

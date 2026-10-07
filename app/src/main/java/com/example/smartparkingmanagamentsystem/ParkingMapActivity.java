@@ -11,7 +11,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,6 +36,9 @@ public class ParkingMapActivity extends AppCompatActivity {
     private ChipGroup chipGroupFloors;
 
     private String currentVehicleType = DatabaseHelper.TYPE_CAR;
+    private String currentEnterpriseId = "ent_nexus_mall";
+    private Enterprise currentEnterprise;
+
     private String selectedFloor = "Basement B1";
     private int hourlyRate = 20;
 
@@ -57,14 +59,21 @@ public class ParkingMapActivity extends AppCompatActivity {
         dbHelper = new DatabaseHelper(this);
         sessionManager = new SessionManager(this);
 
-        if (getIntent() != null && getIntent().hasExtra(VehicleSelectionActivity.EXTRA_VEHICLE_TYPE)) {
-            currentVehicleType = getIntent().getStringExtra(VehicleSelectionActivity.EXTRA_VEHICLE_TYPE);
+        if (getIntent() != null) {
+            if (getIntent().hasExtra(VehicleSelectionActivity.EXTRA_VEHICLE_TYPE)) {
+                currentVehicleType = getIntent().getStringExtra(VehicleSelectionActivity.EXTRA_VEHICLE_TYPE);
+            }
+            if (getIntent().hasExtra(EnterpriseSearchActivity.EXTRA_ENTERPRISE_ID)) {
+                currentEnterpriseId = getIntent().getStringExtra(EnterpriseSearchActivity.EXTRA_ENTERPRISE_ID);
+            }
         }
 
+        currentEnterprise = dbHelper.getEnterpriseById(currentEnterpriseId);
+
         if (DatabaseHelper.TYPE_BIKE.equalsIgnoreCase(currentVehicleType)) {
-            hourlyRate = 10;
+            hourlyRate = currentEnterprise != null ? currentEnterprise.getBikeRate() : 10;
         } else {
-            hourlyRate = 20;
+            hourlyRate = currentEnterprise != null ? currentEnterprise.getCarRate() : 20;
         }
 
         rvMapSlots = findViewById(R.id.rvMapSlots);
@@ -74,10 +83,11 @@ public class ParkingMapActivity extends AppCompatActivity {
 
         btnBackFromMap.setOnClickListener(v -> finish());
 
+        String venueName = currentEnterprise != null ? currentEnterprise.getName() : "Nexus Mall";
         if (DatabaseHelper.TYPE_BIKE.equalsIgnoreCase(currentVehicleType)) {
-            tvMapHeaderTitle.setText("🏍️ Bike Floor Map");
+            tvMapHeaderTitle.setText("🏍️ " + venueName + " Map");
         } else {
-            tvMapHeaderTitle.setText("🚗 Car Floor Map");
+            tvMapHeaderTitle.setText("🚗 " + venueName + " Map");
         }
 
         rvMapSlots.setLayoutManager(new GridLayoutManager(this, 3));
@@ -88,7 +98,7 @@ public class ParkingMapActivity extends AppCompatActivity {
 
     private void setupFloorChips() {
         chipGroupFloors.removeAllViews();
-        List<String> floors = dbHelper.getAvailableFloors(currentVehicleType);
+        List<String> floors = dbHelper.getAvailableFloors(currentVehicleType, currentEnterpriseId);
 
         for (int i = 0; i < floors.size(); i++) {
             String floor = floors.get(i);
@@ -111,7 +121,7 @@ public class ParkingMapActivity extends AppCompatActivity {
     private void loadFloorMapSlots() {
         dbHelper.checkAndAutoCheckoutExpiredSlots();
 
-        List<ParkingSlot> floorSlots = dbHelper.getSlotsByFloor(currentVehicleType, selectedFloor);
+        List<ParkingSlot> floorSlots = dbHelper.getSlotsByFloor(currentVehicleType, selectedFloor, currentEnterpriseId);
 
         ParkingSlotAdapter adapter = new ParkingSlotAdapter(this, floorSlots, slot -> {
             if (slot.isOccupied()) {
@@ -214,7 +224,7 @@ public class ParkingMapActivity extends AppCompatActivity {
             int hours = Integer.parseInt(hoursStr);
             String paymentId = "UPI_REF_" + System.currentTimeMillis();
 
-            boolean success = dbHelper.bookSlot(slot.getSlotNumber(), currentVehicleType, vehicleNum, phoneNum, hours, System.currentTimeMillis(), paymentId, "SUCCESS");
+            boolean success = dbHelper.bookSlot(slot.getSlotNumber(), currentVehicleType, vehicleNum, phoneNum, hours, System.currentTimeMillis(), paymentId, "SUCCESS", currentEnterpriseId);
             if (success) {
                 Toast.makeText(this, "📱 Slot " + slot.getSlotCode() + " Booked Successfully!", Toast.LENGTH_LONG).show();
                 loadFloorMapSlots();
@@ -243,7 +253,7 @@ public class ParkingMapActivity extends AppCompatActivity {
         Button btnCloseTicket = dialogView.findViewById(R.id.btnCloseTicket);
         Button btnCheckout = dialogView.findViewById(R.id.btnCheckout);
 
-        tvTicketTitle.setText("Active Ticket - " + slot.getSlotCode() + " (" + slot.getFloorZone() + ")");
+        tvTicketTitle.setText("Active Ticket - " + slot.getSlotCode() + " (" + slot.getEnterpriseName() + ")");
         tvTicketVehicle.setText("Vehicle: " + slot.getVehicleNumber());
         tvTicketPhone.setText("Phone: +91 " + slot.getPhoneNumber());
 

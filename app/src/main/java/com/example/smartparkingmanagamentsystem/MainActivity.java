@@ -63,6 +63,9 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvClearSelection;
 
     private String currentVehicleType = DatabaseHelper.TYPE_CAR;
+    private String currentEnterpriseId = "ent_nexus_mall";
+    private Enterprise currentEnterprise;
+
     private int hourlyRate = 20;
 
     private List<ParkingSlot> fullSlotList = new ArrayList<>();
@@ -106,18 +109,25 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        if (getIntent() != null && getIntent().hasExtra(VehicleSelectionActivity.EXTRA_VEHICLE_TYPE)) {
-            currentVehicleType = getIntent().getStringExtra(VehicleSelectionActivity.EXTRA_VEHICLE_TYPE);
-        }
-
-        if (DatabaseHelper.TYPE_BIKE.equalsIgnoreCase(currentVehicleType)) {
-            hourlyRate = 10;
-        } else {
-            hourlyRate = 20;
+        if (getIntent() != null) {
+            if (getIntent().hasExtra(VehicleSelectionActivity.EXTRA_VEHICLE_TYPE)) {
+                currentVehicleType = getIntent().getStringExtra(VehicleSelectionActivity.EXTRA_VEHICLE_TYPE);
+            }
+            if (getIntent().hasExtra(EnterpriseSearchActivity.EXTRA_ENTERPRISE_ID)) {
+                currentEnterpriseId = getIntent().getStringExtra(EnterpriseSearchActivity.EXTRA_ENTERPRISE_ID);
+            }
         }
 
         dbHelper = new DatabaseHelper(this);
         sessionManager = new SessionManager(this);
+
+        currentEnterprise = dbHelper.getEnterpriseById(currentEnterpriseId);
+
+        if (DatabaseHelper.TYPE_BIKE.equalsIgnoreCase(currentVehicleType)) {
+            hourlyRate = currentEnterprise != null ? currentEnterprise.getBikeRate() : 10;
+        } else {
+            hourlyRate = currentEnterprise != null ? currentEnterprise.getCarRate() : 20;
+        }
 
         rvSlots = findViewById(R.id.rvSlots);
         tvAvailableCount = findViewById(R.id.tvAvailableCount);
@@ -140,16 +150,18 @@ public class MainActivity extends AppCompatActivity {
             btnOpenFloorMap.setOnClickListener(v -> {
                 Intent intent = new Intent(this, ParkingMapActivity.class);
                 intent.putExtra(VehicleSelectionActivity.EXTRA_VEHICLE_TYPE, currentVehicleType);
+                intent.putExtra(EnterpriseSearchActivity.EXTRA_ENTERPRISE_ID, currentEnterpriseId);
                 startActivity(intent);
             });
         }
 
+        String venueName = currentEnterprise != null ? currentEnterprise.getName() : "Nexus Mall";
         if (DatabaseHelper.TYPE_BIKE.equalsIgnoreCase(currentVehicleType)) {
-            tvHeaderTitle.setText("🏍️ Two Wheeler Parking");
-            tvHeaderRate.setText("Rate: ₹10 / Hour");
+            tvHeaderTitle.setText("🏍️ " + venueName + " (Bike)");
+            tvHeaderRate.setText("Rate: ₹" + hourlyRate + " / Hour");
         } else {
-            tvHeaderTitle.setText("🚗 Four Wheeler Parking");
-            tvHeaderRate.setText("Rate: ₹20 / Hour");
+            tvHeaderTitle.setText("🚗 " + venueName + " (Car)");
+            tvHeaderRate.setText("Rate: ₹" + hourlyRate + " / Hour");
         }
 
         rvSlots.setLayoutManager(new GridLayoutManager(this, 3));
@@ -277,12 +289,12 @@ public class MainActivity extends AppCompatActivity {
 
         if (pending.isBatch && pending.batchSlotNumbers != null) {
             for (Integer slotNum : pending.batchSlotNumbers) {
-                if (dbHelper.bookSlot(slotNum, pending.vehicleType, pending.vehicleNum, pending.phoneNum, pending.hours, now, paymentId, "SUCCESS")) {
+                if (dbHelper.bookSlot(slotNum, pending.vehicleType, pending.vehicleNum, pending.phoneNum, pending.hours, now, paymentId, "SUCCESS", currentEnterpriseId)) {
                     successCount++;
                 }
             }
         } else {
-            if (dbHelper.bookSlot(pending.singleSlotNumber, pending.vehicleType, pending.vehicleNum, pending.phoneNum, pending.hours, now, paymentId, "SUCCESS")) {
+            if (dbHelper.bookSlot(pending.singleSlotNumber, pending.vehicleType, pending.vehicleNum, pending.phoneNum, pending.hours, now, paymentId, "SUCCESS", currentEnterpriseId)) {
                 successCount = 1;
             }
         }
@@ -343,9 +355,9 @@ public class MainActivity extends AppCompatActivity {
     private void loadSlotsData() {
         dbHelper.checkAndAutoCheckoutExpiredSlots();
 
-        fullSlotList = dbHelper.getSlotsByType(currentVehicleType);
-        int occupied = dbHelper.getOccupiedCountByType(currentVehicleType);
-        int total = dbHelper.getTotalCountByType(currentVehicleType);
+        fullSlotList = dbHelper.getSlotsByEnterprise(currentEnterpriseId, currentVehicleType);
+        int occupied = dbHelper.getOccupiedCountByEnterpriseAndType(currentEnterpriseId, currentVehicleType);
+        int total = dbHelper.getTotalCountByEnterpriseAndType(currentEnterpriseId, currentVehicleType);
         int available = total - occupied;
 
         tvAvailableCount.setText(String.valueOf(available));
@@ -444,7 +456,7 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 String userType = sessionManager.getUserVehicleType();
                 if (userType.equalsIgnoreCase(currentVehicleType)) {
-                    tvRateNotice.setText("Zone: " + slot.getFloorZone() + " | Rate: ₹" + hourlyRate + " / Hour");
+                    tvRateNotice.setText("Venue: " + slot.getEnterpriseName() + " | Rate: ₹" + hourlyRate + "/hr");
                     if (sessionManager.getUserVehicleNumber() != null && !sessionManager.getUserVehicleNumber().isEmpty()) {
                         etVehicleNumber.setText(sessionManager.getUserVehicleNumber());
                     }
@@ -459,7 +471,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         } else {
-            tvRateNotice.setText("Zone: " + slot.getFloorZone() + " | Rate: ₹" + hourlyRate + " / Hour");
+            tvRateNotice.setText("Venue: " + slot.getEnterpriseName() + " | Rate: ₹" + hourlyRate + "/hr");
         }
 
         etBookingHours.addTextChangedListener(new TextWatcher() {
@@ -737,7 +749,7 @@ public class MainActivity extends AppCompatActivity {
         Button btnCheckout = dialogView.findViewById(R.id.btnCheckout);
         Button btnEmergencyDelete = dialogView.findViewById(R.id.btnEmergencyDelete);
 
-        tvTicketTitle.setText("Active Ticket - " + slot.getSlotCode() + " (" + slot.getFloorZone() + ")");
+        tvTicketTitle.setText("Active Ticket - " + slot.getSlotCode() + " (" + slot.getEnterpriseName() + ")");
         tvTicketVehicle.setText("Vehicle: " + slot.getVehicleNumber());
 
         String phone = slot.getPhoneNumber();

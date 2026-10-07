@@ -12,7 +12,17 @@ import java.util.List;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "SmartParking.db";
-    private static final int DATABASE_VERSION = 7;
+    private static final int DATABASE_VERSION = 8;
+
+    // Enterprises Table
+    private static final String TABLE_ENTERPRISES = "enterprises";
+    private static final String COLUMN_ENT_ID = "id";
+    private static final String COLUMN_ENT_NAME = "name";
+    private static final String COLUMN_ENT_CATEGORY = "category";
+    private static final String COLUMN_ENT_ADDRESS = "address";
+    private static final String COLUMN_ENT_BIKE_RATE = "bike_rate";
+    private static final String COLUMN_ENT_CAR_RATE = "car_rate";
+    private static final String COLUMN_ENT_ADMIN_EMAIL = "admin_email";
 
     // Slots Table
     private static final String TABLE_SLOTS = "parking_slots";
@@ -25,6 +35,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_ENTRY_TIME = "entry_time";
     private static final String COLUMN_FLOOR_ZONE = "floor_zone";
     private static final String COLUMN_SLOT_CODE = "slot_code";
+    private static final String COLUMN_ENTERPRISE_ID = "enterprise_id";
+    private static final String COLUMN_ENTERPRISE_NAME = "enterprise_name";
 
     // History Table
     private static final String TABLE_HISTORY = "parking_history";
@@ -59,6 +71,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+        String createEnterprisesTableQuery = "CREATE TABLE " + TABLE_ENTERPRISES + " ("
+                + COLUMN_ENT_ID + " TEXT PRIMARY KEY, "
+                + COLUMN_ENT_NAME + " TEXT, "
+                + COLUMN_ENT_CATEGORY + " TEXT, "
+                + COLUMN_ENT_ADDRESS + " TEXT, "
+                + COLUMN_ENT_BIKE_RATE + " INTEGER, "
+                + COLUMN_ENT_CAR_RATE + " INTEGER, "
+                + COLUMN_ENT_ADMIN_EMAIL + " TEXT)";
+        db.execSQL(createEnterprisesTableQuery);
+
         String createSlotsTableQuery = "CREATE TABLE " + TABLE_SLOTS + " ("
                 + COLUMN_SLOT_NUMBER + " INTEGER, "
                 + COLUMN_VEHICLE_TYPE + " TEXT, "
@@ -71,7 +93,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COLUMN_PAYMENT_STATUS + " TEXT, "
                 + COLUMN_FLOOR_ZONE + " TEXT DEFAULT 'Floor 1', "
                 + COLUMN_SLOT_CODE + " TEXT, "
-                + "PRIMARY KEY (" + COLUMN_SLOT_NUMBER + ", " + COLUMN_VEHICLE_TYPE + "))";
+                + COLUMN_ENTERPRISE_ID + " TEXT DEFAULT 'ent_nexus_mall', "
+                + COLUMN_ENTERPRISE_NAME + " TEXT DEFAULT 'Nexus Shopping Mall', "
+                + "PRIMARY KEY (" + COLUMN_SLOT_NUMBER + ", " + COLUMN_VEHICLE_TYPE + ", " + COLUMN_ENTERPRISE_ID + "))";
         db.execSQL(createSlotsTableQuery);
 
         String createHistoryTableQuery = "CREATE TABLE " + TABLE_HISTORY + " ("
@@ -87,7 +111,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COLUMN_VIOLATION_REASON + " TEXT, "
                 + COLUMN_PROOF_IMAGE_PATH + " TEXT, "
                 + COLUMN_PAYMENT_ID + " TEXT, "
-                + COLUMN_PAYMENT_STATUS + " TEXT)";
+                + COLUMN_PAYMENT_STATUS + " TEXT, "
+                + COLUMN_ENTERPRISE_ID + " TEXT, "
+                + COLUMN_ENTERPRISE_NAME + " TEXT)";
         db.execSQL(createHistoryTableQuery);
 
         String createUsersTableQuery = "CREATE TABLE " + TABLE_USERS + " ("
@@ -100,38 +126,203 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COLUMN_USER_CREATED_AT + " INTEGER)";
         db.execSQL(createUsersTableQuery);
 
-        populateDefaultSlotsForType(db, TYPE_BIKE);
-        populateDefaultSlotsForType(db, TYPE_CAR);
+        populateDefaultEnterprisesAndSlots(db);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_ENTERPRISES);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_SLOTS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_HISTORY);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
         onCreate(db);
     }
 
-    private void populateDefaultSlotsForType(SQLiteDatabase db, String type) {
-        for (int i = 1; i <= DEFAULT_SLOTS_PER_TYPE; i++) {
-            ContentValues cv = new ContentValues();
-            cv.put(COLUMN_SLOT_NUMBER, i);
-            cv.put(COLUMN_VEHICLE_TYPE, type);
-            cv.put(COLUMN_IS_OCCUPIED, 0);
-            cv.put(COLUMN_VEHICLE_NUMBER, "");
-            cv.put(COLUMN_PHONE_NUMBER, "");
-            cv.put(COLUMN_BOOKING_HOURS, 0);
-            cv.put(COLUMN_ENTRY_TIME, 0);
-            cv.put(COLUMN_PAYMENT_ID, "");
-            cv.put(COLUMN_PAYMENT_STATUS, "UNPAID");
+    private void populateDefaultEnterprisesAndSlots(SQLiteDatabase db) {
+        // 1. Nexus Shopping Mall
+        insertEnterprise(db, "ent_nexus_mall", "Nexus Shopping Mall", "Shopping Mall", "MG Road, Central Zone", 10, 20, "nexus@parksmart.com");
+        populateSlotsForEnterprise(db, "ent_nexus_mall", "Nexus Shopping Mall");
 
-            String floor = (i <= 5) ? "Basement B1" : "Floor 1";
-            String code = (TYPE_BIKE.equalsIgnoreCase(type) ? "B-" : "C-") + (100 + i);
-            cv.put(COLUMN_FLOOR_ZONE, floor);
-            cv.put(COLUMN_SLOT_CODE, code);
+        // 2. Grand Hyatt Restaurant
+        insertEnterprise(db, "ent_grand_hyatt", "Grand Hyatt Fine Dining", "Restaurant & Hotel", "Park Avenue, South Bay", 15, 30, "hyatt@parksmart.com");
+        populateSlotsForEnterprise(db, "ent_grand_hyatt", "Grand Hyatt Fine Dining");
 
-            db.insert(TABLE_SLOTS, null, cv);
+        // 3. PVR IMAX Multiplex
+        insertEnterprise(db, "ent_pvr_imax", "PVR IMAX Multiplex", "Cinema & Entertainment", "City Center Plaza", 10, 25, "pvr@parksmart.com");
+        populateSlotsForEnterprise(db, "ent_pvr_imax", "PVR IMAX Multiplex");
+
+        // 4. TechPark Towers
+        insertEnterprise(db, "ent_techpark", "TechPark Commercial Towers", "Commercial Office", "IT Highway Corridor", 10, 20, "admin@parksmart.com");
+        populateSlotsForEnterprise(db, "ent_techpark", "TechPark Commercial Towers");
+    }
+
+    private void insertEnterprise(SQLiteDatabase db, String id, String name, String category, String address, int bikeRate, int carRate, String adminEmail) {
+        ContentValues cv = new ContentValues();
+        cv.put(COLUMN_ENT_ID, id);
+        cv.put(COLUMN_ENT_NAME, name);
+        cv.put(COLUMN_ENT_CATEGORY, category);
+        cv.put(COLUMN_ENT_ADDRESS, address);
+        cv.put(COLUMN_ENT_BIKE_RATE, bikeRate);
+        cv.put(COLUMN_ENT_CAR_RATE, carRate);
+        cv.put(COLUMN_ENT_ADMIN_EMAIL, adminEmail);
+        db.insertWithOnConflict(TABLE_ENTERPRISES, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    private void populateSlotsForEnterprise(SQLiteDatabase db, String entId, String entName) {
+        for (int i = 1; i <= 6; i++) {
+            // Bikes
+            ContentValues cvB = new ContentValues();
+            cvB.put(COLUMN_SLOT_NUMBER, i);
+            cvB.put(COLUMN_VEHICLE_TYPE, TYPE_BIKE);
+            cvB.put(COLUMN_IS_OCCUPIED, 0);
+            cvB.put(COLUMN_VEHICLE_NUMBER, "");
+            cvB.put(COLUMN_PHONE_NUMBER, "");
+            cvB.put(COLUMN_BOOKING_HOURS, 0);
+            cvB.put(COLUMN_ENTRY_TIME, 0);
+            cvB.put(COLUMN_PAYMENT_ID, "");
+            cvB.put(COLUMN_PAYMENT_STATUS, "UNPAID");
+            cvB.put(COLUMN_FLOOR_ZONE, i <= 3 ? "Basement B1" : "Floor 1");
+            cvB.put(COLUMN_SLOT_CODE, "B-" + (100 + i));
+            cvB.put(COLUMN_ENTERPRISE_ID, entId);
+            cvB.put(COLUMN_ENTERPRISE_NAME, entName);
+            db.insert(TABLE_SLOTS, null, cvB);
+
+            // Cars
+            ContentValues cvC = new ContentValues();
+            cvC.put(COLUMN_SLOT_NUMBER, i);
+            cvC.put(COLUMN_VEHICLE_TYPE, TYPE_CAR);
+            cvC.put(COLUMN_IS_OCCUPIED, 0);
+            cvC.put(COLUMN_VEHICLE_NUMBER, "");
+            cvC.put(COLUMN_PHONE_NUMBER, "");
+            cvC.put(COLUMN_BOOKING_HOURS, 0);
+            cvC.put(COLUMN_ENTRY_TIME, 0);
+            cvC.put(COLUMN_PAYMENT_ID, "");
+            cvC.put(COLUMN_PAYMENT_STATUS, "UNPAID");
+            cvC.put(COLUMN_FLOOR_ZONE, i <= 3 ? "Basement B1" : "Floor 1");
+            cvC.put(COLUMN_SLOT_CODE, "C-" + (100 + i));
+            cvC.put(COLUMN_ENTERPRISE_ID, entId);
+            cvC.put(COLUMN_ENTERPRISE_NAME, entName);
+            db.insert(TABLE_SLOTS, null, cvC);
         }
+    }
+
+    public List<Enterprise> getAllEnterprises() {
+        List<Enterprise> list = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_ENTERPRISES + " ORDER BY " + COLUMN_ENT_NAME + " ASC", null);
+        if (cursor.moveToFirst()) {
+            do {
+                String id = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ID));
+                String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_NAME));
+                String category = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_CATEGORY));
+                String address = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ADDRESS));
+                int bikeRate = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENT_BIKE_RATE));
+                int carRate = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENT_CAR_RATE));
+                String adminEmail = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ADMIN_EMAIL));
+
+                list.add(new Enterprise(id, name, category, address, bikeRate, carRate, adminEmail));
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return list;
+    }
+
+    public List<Enterprise> searchEnterprises(String query, String categoryFilter) {
+        List<Enterprise> list = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        StringBuilder sql = new StringBuilder("SELECT * FROM " + TABLE_ENTERPRISES + " WHERE 1=1");
+        List<String> args = new ArrayList<>();
+
+        if (categoryFilter != null && !categoryFilter.isEmpty() && !"All".equalsIgnoreCase(categoryFilter)) {
+            sql.append(" AND ").append(COLUMN_ENT_CATEGORY).append(" LIKE ?");
+            args.add("%" + categoryFilter + "%");
+        }
+
+        if (query != null && !query.trim().isEmpty()) {
+            sql.append(" AND (").append(COLUMN_ENT_NAME).append(" LIKE ? OR ").append(COLUMN_ENT_ADDRESS).append(" LIKE ?)");
+            args.add("%" + query.trim() + "%");
+            args.add("%" + query.trim() + "%");
+        }
+
+        sql.append(" ORDER BY ").append(COLUMN_ENT_NAME).append(" ASC");
+
+        Cursor cursor = db.rawQuery(sql.toString(), args.toArray(new String[0]));
+        if (cursor.moveToFirst()) {
+            do {
+                String id = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ID));
+                String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_NAME));
+                String category = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_CATEGORY));
+                String address = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ADDRESS));
+                int bikeRate = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENT_BIKE_RATE));
+                int carRate = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENT_CAR_RATE));
+                String adminEmail = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ADMIN_EMAIL));
+
+                list.add(new Enterprise(id, name, category, address, bikeRate, carRate, adminEmail));
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return list;
+    }
+
+    public Enterprise getEnterpriseById(String enterpriseId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_ENTERPRISES + " WHERE " + COLUMN_ENT_ID + " = ?", new String[]{enterpriseId});
+        Enterprise ent = null;
+        if (cursor.moveToFirst()) {
+            String id = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ID));
+            String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_NAME));
+            String category = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_CATEGORY));
+            String address = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ADDRESS));
+            int bikeRate = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENT_BIKE_RATE));
+            int carRate = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ENT_CAR_RATE));
+            String adminEmail = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENT_ADMIN_EMAIL));
+
+            ent = new Enterprise(id, name, category, address, bikeRate, carRate, adminEmail);
+        }
+        cursor.close();
+        return ent != null ? ent : new Enterprise("ent_nexus_mall", "Nexus Shopping Mall", "Shopping Mall", "MG Road, Central Zone", 10, 20, "nexus@parksmart.com");
+    }
+
+    public int getAvailableSlotCountForEnterprise(String enterpriseId, String vehicleType) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_SLOTS + " WHERE " + COLUMN_ENTERPRISE_ID + " = ? AND " + COLUMN_VEHICLE_TYPE + " = ? AND " + COLUMN_IS_OCCUPIED + " = 0", new String[]{enterpriseId, vehicleType});
+        int count = 0;
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0);
+        }
+        cursor.close();
+        return count;
+    }
+
+    public List<ParkingSlot> getSlotsByEnterprise(String enterpriseId, String vehicleType) {
+        checkAndAutoCheckoutExpiredSlots();
+
+        List<ParkingSlot> list = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_SLOTS + " WHERE " + COLUMN_ENTERPRISE_ID + " = ? AND " + COLUMN_VEHICLE_TYPE + " = ? ORDER BY " + COLUMN_SLOT_NUMBER + " ASC", new String[]{enterpriseId, vehicleType});
+        if (cursor.moveToFirst()) {
+            do {
+                int slotNum = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_SLOT_NUMBER));
+                String vType = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_VEHICLE_TYPE));
+                boolean isOccupied = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_IS_OCCUPIED)) == 1;
+                String vehicleNum = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_VEHICLE_NUMBER));
+                String phoneNum = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PHONE_NUMBER));
+                int hours = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_BOOKING_HOURS));
+                long entryTime = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_TIME));
+                String payId = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PAYMENT_ID));
+                String payStatus = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PAYMENT_STATUS));
+                String floor = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_FLOOR_ZONE));
+                String code = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SLOT_CODE));
+                String entId = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTERPRISE_ID));
+                String entName = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTERPRISE_NAME));
+
+                list.add(new ParkingSlot(slotNum, vType, isOccupied, vehicleNum, phoneNum, hours, entryTime, payId, payStatus, floor, code, entId, entName));
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return list;
     }
 
     public boolean addCustomSlot(ParkingSlot slot) {
@@ -148,6 +339,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cv.put(COLUMN_PAYMENT_STATUS, slot.getPaymentStatus());
         cv.put(COLUMN_FLOOR_ZONE, slot.getFloorZone());
         cv.put(COLUMN_SLOT_CODE, slot.getSlotCode());
+        cv.put(COLUMN_ENTERPRISE_ID, slot.getEnterpriseId());
+        cv.put(COLUMN_ENTERPRISE_NAME, slot.getEnterpriseName());
 
         long rowId = db.insertWithOnConflict(TABLE_SLOTS, null, cv, SQLiteDatabase.CONFLICT_REPLACE);
         if (rowId != -1) {
@@ -157,16 +350,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return false;
     }
 
-    public boolean deleteCustomSlot(int slotNumber, String vehicleType) {
+    public boolean deleteCustomSlot(int slotNumber, String vehicleType, String enterpriseId) {
         SQLiteDatabase db = this.getWritableDatabase();
-        int rows = db.delete(TABLE_SLOTS, COLUMN_SLOT_NUMBER + " = ? AND " + COLUMN_VEHICLE_TYPE + " = ?", new String[]{String.valueOf(slotNumber), vehicleType});
+        int rows = db.delete(TABLE_SLOTS, COLUMN_SLOT_NUMBER + " = ? AND " + COLUMN_VEHICLE_TYPE + " = ? AND " + COLUMN_ENTERPRISE_ID + " = ?", new String[]{String.valueOf(slotNumber), vehicleType, enterpriseId});
         return rows > 0;
     }
 
-    public List<String> getAvailableFloors(String vehicleType) {
+    public List<String> getAvailableFloors(String vehicleType, String enterpriseId) {
         List<String> floors = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT DISTINCT " + COLUMN_FLOOR_ZONE + " FROM " + TABLE_SLOTS + " WHERE " + COLUMN_VEHICLE_TYPE + " = ? ORDER BY " + COLUMN_FLOOR_ZONE + " ASC", new String[]{vehicleType});
+        Cursor cursor = db.rawQuery("SELECT DISTINCT " + COLUMN_FLOOR_ZONE + " FROM " + TABLE_SLOTS + " WHERE " + COLUMN_VEHICLE_TYPE + " = ? AND " + COLUMN_ENTERPRISE_ID + " = ? ORDER BY " + COLUMN_FLOOR_ZONE + " ASC", new String[]{vehicleType, enterpriseId});
         if (cursor.moveToFirst()) {
             do {
                 String floor = cursor.getString(0);
@@ -183,13 +376,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return floors;
     }
 
-    public List<ParkingSlot> getSlotsByFloor(String vehicleType, String floorZone) {
+    public List<ParkingSlot> getSlotsByFloor(String vehicleType, String floorZone, String enterpriseId) {
         checkAndAutoCheckoutExpiredSlots();
 
         List<ParkingSlot> list = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
 
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_SLOTS + " WHERE " + COLUMN_VEHICLE_TYPE + " = ? AND " + COLUMN_FLOOR_ZONE + " = ? ORDER BY " + COLUMN_SLOT_NUMBER + " ASC", new String[]{vehicleType, floorZone});
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_SLOTS + " WHERE " + COLUMN_VEHICLE_TYPE + " = ? AND " + COLUMN_FLOOR_ZONE + " = ? AND " + COLUMN_ENTERPRISE_ID + " = ? ORDER BY " + COLUMN_SLOT_NUMBER + " ASC", new String[]{vehicleType, floorZone, enterpriseId});
         if (cursor.moveToFirst()) {
             do {
                 int slotNum = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_SLOT_NUMBER));
@@ -203,8 +396,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 String payStatus = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PAYMENT_STATUS));
                 String floor = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_FLOOR_ZONE));
                 String code = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SLOT_CODE));
+                String entId = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTERPRISE_ID));
+                String entName = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTERPRISE_NAME));
 
-                list.add(new ParkingSlot(slotNum, vType, isOccupied, vehicleNum, phoneNum, hours, entryTime, payId, payStatus, floor, code));
+                list.add(new ParkingSlot(slotNum, vType, isOccupied, vehicleNum, phoneNum, hours, entryTime, payId, payStatus, floor, code, entId, entName));
             } while (cursor.moveToNext());
         }
         cursor.close();
@@ -263,33 +458,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     public List<ParkingSlot> getSlotsByType(String vehicleType) {
-        checkAndAutoCheckoutExpiredSlots();
-
-        List<ParkingSlot> list = new ArrayList<>();
-        SQLiteDatabase db = this.getReadableDatabase();
-
-        ensureDefaultSlots(db);
-
-        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_SLOTS + " WHERE " + COLUMN_VEHICLE_TYPE + " = ? ORDER BY " + COLUMN_SLOT_NUMBER + " ASC", new String[]{vehicleType});
-        if (cursor.moveToFirst()) {
-            do {
-                int slotNum = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_SLOT_NUMBER));
-                String vType = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_VEHICLE_TYPE));
-                boolean isOccupied = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_IS_OCCUPIED)) == 1;
-                String vehicleNum = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_VEHICLE_NUMBER));
-                String phoneNum = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PHONE_NUMBER));
-                int hours = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_BOOKING_HOURS));
-                long entryTime = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_TIME));
-                String payId = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PAYMENT_ID));
-                String payStatus = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PAYMENT_STATUS));
-                String floor = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_FLOOR_ZONE));
-                String code = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SLOT_CODE));
-
-                list.add(new ParkingSlot(slotNum, vType, isOccupied, vehicleNum, phoneNum, hours, entryTime, payId, payStatus, floor, code));
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
-        return list;
+        return getSlotsByEnterprise("ent_nexus_mall", vehicleType);
     }
 
     public List<ParkingSlot> getUsersActiveSlots(String phone) {
@@ -312,33 +481,25 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 String payStatus = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PAYMENT_STATUS));
                 String floor = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_FLOOR_ZONE));
                 String code = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SLOT_CODE));
+                String entId = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTERPRISE_ID));
+                String entName = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTERPRISE_NAME));
 
-                list.add(new ParkingSlot(slotNum, vType, true, vehicleNum, phoneNum, hours, entryTime, payId, payStatus, floor, code));
+                list.add(new ParkingSlot(slotNum, vType, true, vehicleNum, phoneNum, hours, entryTime, payId, payStatus, floor, code, entId, entName));
             } while (cursor.moveToNext());
         }
         cursor.close();
         return list;
     }
 
-    private void ensureDefaultSlots(SQLiteDatabase db) {
-        Cursor countCursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_SLOTS, null);
-        int count = 0;
-        if (countCursor.moveToFirst()) {
-            count = countCursor.getInt(0);
-        }
-        countCursor.close();
-
-        if (count == 0) {
-            populateDefaultSlotsForType(db, TYPE_BIKE);
-            populateDefaultSlotsForType(db, TYPE_CAR);
-        }
-    }
-
     public boolean bookSlot(int slotNumber, String vehicleType, String vehicleNumber, String phoneNumber, int hours, long entryTime) {
-        return bookSlot(slotNumber, vehicleType, vehicleNumber, phoneNumber, hours, entryTime, "pay_mock_" + System.currentTimeMillis(), "SUCCESS");
+        return bookSlot(slotNumber, vehicleType, vehicleNumber, phoneNumber, hours, entryTime, "pay_mock_" + System.currentTimeMillis(), "SUCCESS", "ent_nexus_mall");
     }
 
     public boolean bookSlot(int slotNumber, String vehicleType, String vehicleNumber, String phoneNumber, int hours, long entryTime, String paymentId, String paymentStatus) {
+        return bookSlot(slotNumber, vehicleType, vehicleNumber, phoneNumber, hours, entryTime, paymentId, paymentStatus, "ent_nexus_mall");
+    }
+
+    public boolean bookSlot(int slotNumber, String vehicleType, String vehicleNumber, String phoneNumber, int hours, long entryTime, String paymentId, String paymentStatus, String enterpriseId) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues cv = new ContentValues();
         cv.put(COLUMN_IS_OCCUPIED, 1);
@@ -349,9 +510,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cv.put(COLUMN_PAYMENT_ID, paymentId);
         cv.put(COLUMN_PAYMENT_STATUS, paymentStatus);
 
-        int rows = db.update(TABLE_SLOTS, cv, COLUMN_SLOT_NUMBER + " = ? AND " + COLUMN_VEHICLE_TYPE + " = ?", new String[]{String.valueOf(slotNumber), vehicleType});
+        int rows = db.update(TABLE_SLOTS, cv, COLUMN_SLOT_NUMBER + " = ? AND " + COLUMN_VEHICLE_TYPE + " = ? AND " + COLUMN_ENTERPRISE_ID + " = ?", new String[]{String.valueOf(slotNumber), vehicleType, enterpriseId});
         if (rows > 0) {
-            ParkingSlot bookedSlot = new ParkingSlot(slotNumber, vehicleType, true, vehicleNumber, phoneNumber, hours, entryTime, paymentId, paymentStatus);
+            Enterprise ent = getEnterpriseById(enterpriseId);
+            ParkingSlot bookedSlot = new ParkingSlot(slotNumber, vehicleType, true, vehicleNumber, phoneNumber, hours, entryTime, paymentId, paymentStatus, "Floor 1", "Slot " + slotNumber, enterpriseId, ent.getName());
             FirebaseHelper.getInstance().syncSlotToCloud(bookedSlot);
             return true;
         }
@@ -390,6 +552,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             historyCv.put(COLUMN_PROOF_IMAGE_PATH, "");
             historyCv.put(COLUMN_PAYMENT_ID, slot.getPaymentId() != null ? slot.getPaymentId() : "");
             historyCv.put(COLUMN_PAYMENT_STATUS, "PAID");
+            historyCv.put(COLUMN_ENTERPRISE_ID, slot.getEnterpriseId());
+            historyCv.put(COLUMN_ENTERPRISE_NAME, slot.getEnterpriseName());
 
             long historyId = db.insert(TABLE_HISTORY, null, historyCv);
 
@@ -402,13 +566,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             slotCv.put(COLUMN_PAYMENT_ID, "");
             slotCv.put(COLUMN_PAYMENT_STATUS, "UNPAID");
 
-            int rows = db.update(TABLE_SLOTS, slotCv, COLUMN_SLOT_NUMBER + " = ? AND " + COLUMN_VEHICLE_TYPE + " = ?", new String[]{String.valueOf(slot.getSlotNumber()), slot.getVehicleType()});
+            int rows = db.update(TABLE_SLOTS, slotCv, COLUMN_SLOT_NUMBER + " = ? AND " + COLUMN_VEHICLE_TYPE + " = ? AND " + COLUMN_ENTERPRISE_ID + " = ?", new String[]{String.valueOf(slot.getSlotNumber()), slot.getVehicleType(), slot.getEnterpriseId()});
 
             if (historyId != -1 && rows > 0) {
                 db.setTransactionSuccessful();
 
                 // Sync slot release & history to Firebase Cloud
-                ParkingSlot freedSlot = new ParkingSlot(slot.getSlotNumber(), slot.getVehicleType(), false, "", "", 0, 0);
+                ParkingSlot freedSlot = new ParkingSlot(slot.getSlotNumber(), slot.getVehicleType(), false, "", "", 0, 0, "", "UNPAID", slot.getFloorZone(), slot.getSlotCode(), slot.getEnterpriseId(), slot.getEnterpriseName());
                 FirebaseHelper.getInstance().syncSlotToCloud(freedSlot);
 
                 ParkingHistoryRecord historyRecord = new ParkingHistoryRecord(
@@ -446,6 +610,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             historyCv.put(COLUMN_PROOF_IMAGE_PATH, proofImagePath);
             historyCv.put(COLUMN_PAYMENT_ID, "EMERGENCY_WAIVED");
             historyCv.put(COLUMN_PAYMENT_STATUS, "WAIVED");
+            historyCv.put(COLUMN_ENTERPRISE_ID, slot.getEnterpriseId());
+            historyCv.put(COLUMN_ENTERPRISE_NAME, slot.getEnterpriseName());
 
             long historyId = db.insert(TABLE_HISTORY, null, historyCv);
 
@@ -458,13 +624,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             slotCv.put(COLUMN_PAYMENT_ID, "");
             slotCv.put(COLUMN_PAYMENT_STATUS, "UNPAID");
 
-            int rows = db.update(TABLE_SLOTS, slotCv, COLUMN_SLOT_NUMBER + " = ? AND " + COLUMN_VEHICLE_TYPE + " = ?", new String[]{String.valueOf(slot.getSlotNumber()), slot.getVehicleType()});
+            int rows = db.update(TABLE_SLOTS, slotCv, COLUMN_SLOT_NUMBER + " = ? AND " + COLUMN_VEHICLE_TYPE + " = ? AND " + COLUMN_ENTERPRISE_ID + " = ?", new String[]{String.valueOf(slot.getSlotNumber()), slot.getVehicleType(), slot.getEnterpriseId()});
 
             if (historyId != -1 && rows > 0) {
                 db.setTransactionSuccessful();
 
                 // Sync emergency release & history to Firebase Cloud
-                ParkingSlot freedSlot = new ParkingSlot(slot.getSlotNumber(), slot.getVehicleType(), false, "", "", 0, 0);
+                ParkingSlot freedSlot = new ParkingSlot(slot.getSlotNumber(), slot.getVehicleType(), false, "", "", 0, 0, "", "UNPAID", slot.getFloorZone(), slot.getSlotCode(), slot.getEnterpriseId(), slot.getEnterpriseName());
                 FirebaseHelper.getInstance().syncSlotToCloud(freedSlot);
 
                 ParkingHistoryRecord historyRecord = new ParkingHistoryRecord(
@@ -499,8 +665,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 long entryTime = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_TIME));
                 String payId = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PAYMENT_ID));
                 String payStatus = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PAYMENT_STATUS));
+                String floor = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_FLOOR_ZONE));
+                String code = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SLOT_CODE));
+                String entId = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTERPRISE_ID));
+                String entName = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ENTERPRISE_NAME));
 
-                allOccupied.add(new ParkingSlot(slotNum, vType, true, vehicleNum, phoneNum, hours, entryTime, payId, payStatus));
+                allOccupied.add(new ParkingSlot(slotNum, vType, true, vehicleNum, phoneNum, hours, entryTime, payId, payStatus, floor, code, entId, entName));
             } while (cursor.moveToNext());
         }
         cursor.close();
@@ -610,6 +780,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public int getOccupiedCountByType(String vehicleType) {
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_SLOTS + " WHERE " + COLUMN_VEHICLE_TYPE + " = ? AND " + COLUMN_IS_OCCUPIED + " = 1", new String[]{vehicleType});
+        int count = 0;
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0);
+        }
+        cursor.close();
+        return count;
+    }
+
+    public int getOccupiedCountByEnterpriseAndType(String enterpriseId, String vehicleType) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_SLOTS + " WHERE " + COLUMN_ENTERPRISE_ID + " = ? AND " + COLUMN_VEHICLE_TYPE + " = ? AND " + COLUMN_IS_OCCUPIED + " = 1", new String[]{enterpriseId, vehicleType});
+        int count = 0;
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0);
+        }
+        cursor.close();
+        return count;
+    }
+
+    public int getTotalCountByEnterpriseAndType(String enterpriseId, String vehicleType) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_SLOTS + " WHERE " + COLUMN_ENTERPRISE_ID + " = ? AND " + COLUMN_VEHICLE_TYPE + " = ?", new String[]{enterpriseId, vehicleType});
         int count = 0;
         if (cursor.moveToFirst()) {
             count = cursor.getInt(0);

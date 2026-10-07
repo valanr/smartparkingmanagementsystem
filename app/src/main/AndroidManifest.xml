@@ -22,6 +22,10 @@
         </activity>
 
         <activity
+            android:name=".EnterpriseSearchActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".AdminLoginActivity"
             android:exported="false" />
 

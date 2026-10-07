@@ -24,12 +24,21 @@ public class AdminSlotManagerActivity extends AppCompatActivity {
     private RecyclerView rvManagedSlots;
     private TextView tvTotalConfiguredSlots;
 
+    private String currentEnterpriseId = "ent_nexus_mall";
+    private Enterprise currentEnterprise;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_slot_manager);
 
         dbHelper = new DatabaseHelper(this);
+
+        if (getIntent() != null && getIntent().hasExtra(EnterpriseSearchActivity.EXTRA_ENTERPRISE_ID)) {
+            currentEnterpriseId = getIntent().getStringExtra(EnterpriseSearchActivity.EXTRA_ENTERPRISE_ID);
+        }
+
+        currentEnterprise = dbHelper.getEnterpriseById(currentEnterpriseId);
 
         rvManagedSlots = findViewById(R.id.rvManagedSlots);
         tvTotalConfiguredSlots = findViewById(R.id.tvTotalConfiguredSlots);
@@ -45,25 +54,26 @@ public class AdminSlotManagerActivity extends AppCompatActivity {
     }
 
     private void loadSlotsData() {
-        List<ParkingSlot> bikeSlots = dbHelper.getSlotsByType(DatabaseHelper.TYPE_BIKE);
-        List<ParkingSlot> carSlots = dbHelper.getSlotsByType(DatabaseHelper.TYPE_CAR);
+        List<ParkingSlot> bikeSlots = dbHelper.getSlotsByEnterprise(currentEnterpriseId, DatabaseHelper.TYPE_BIKE);
+        List<ParkingSlot> carSlots = dbHelper.getSlotsByEnterprise(currentEnterpriseId, DatabaseHelper.TYPE_CAR);
 
         List<ParkingSlot> allSlots = new ArrayList<>();
         allSlots.addAll(bikeSlots);
         allSlots.addAll(carSlots);
 
-        tvTotalConfiguredSlots.setText("Total Configured Slots: " + allSlots.size());
+        String venueName = currentEnterprise != null ? currentEnterprise.getName() : "Nexus Mall";
+        tvTotalConfiguredSlots.setText(venueName + " Slots: " + allSlots.size());
 
         ParkingSlotAdapter adapter = new ParkingSlotAdapter(this, allSlots, slot -> {
             new AlertDialog.Builder(AdminSlotManagerActivity.this)
-                    .setTitle("Manage Slot #" + slot.getSlotNumber() + " (" + slot.getVehicleType() + ")")
-                    .setMessage("Slot Code: " + slot.getSlotCode() + "\nFloor Zone: " + slot.getFloorZone() + "\nStatus: " + (slot.isOccupied() ? "Occupied" : "Available"))
+                    .setTitle("Manage " + slot.getSlotCode() + " (" + slot.getVehicleType() + ")")
+                    .setMessage("Venue: " + slot.getEnterpriseName() + "\nFloor Zone: " + slot.getFloorZone() + "\nStatus: " + (slot.isOccupied() ? "Occupied" : "Available"))
                     .setNegativeButton("Delete Slot", (dialog, which) -> {
                         if (slot.isOccupied()) {
                             Toast.makeText(AdminSlotManagerActivity.this, "Cannot delete occupied slot! Force release it first.", Toast.LENGTH_SHORT).show();
                             return;
                         }
-                        boolean success = dbHelper.deleteCustomSlot(slot.getSlotNumber(), slot.getVehicleType());
+                        boolean success = dbHelper.deleteCustomSlot(slot.getSlotNumber(), slot.getVehicleType(), currentEnterpriseId);
                         if (success) {
                             Toast.makeText(AdminSlotManagerActivity.this, "Slot deleted successfully!", Toast.LENGTH_SHORT).show();
                             loadSlotsData();
@@ -111,10 +121,11 @@ public class AdminSlotManagerActivity extends AppCompatActivity {
                 floorStr = "Basement B1";
             }
 
-            ParkingSlot newSlot = new ParkingSlot(slotNum, vehicleType, false, "", "", 0, 0, "", "UNPAID", floorStr, codeStr);
+            String venueName = currentEnterprise != null ? currentEnterprise.getName() : "Nexus Shopping Mall";
+            ParkingSlot newSlot = new ParkingSlot(slotNum, vehicleType, false, "", "", 0, 0, "", "UNPAID", floorStr, codeStr, currentEnterpriseId, venueName);
             boolean success = dbHelper.addCustomSlot(newSlot);
             if (success) {
-                Toast.makeText(AdminSlotManagerActivity.this, "Slot " + codeStr + " created successfully!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(AdminSlotManagerActivity.this, "Slot " + codeStr + " created for " + venueName + "!", Toast.LENGTH_SHORT).show();
                 loadSlotsData();
                 dialog.dismiss();
             } else {
