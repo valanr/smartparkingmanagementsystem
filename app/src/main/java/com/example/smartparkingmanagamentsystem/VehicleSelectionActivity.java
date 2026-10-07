@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -12,6 +13,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.card.MaterialCardView;
+
+import java.util.List;
 
 public class VehicleSelectionActivity extends AppCompatActivity {
 
@@ -25,6 +28,11 @@ public class VehicleSelectionActivity extends AppCompatActivity {
     private TextView tvWelcomeUser;
     private TextView tvUserProfileVehicle;
     private TextView tvUserProfilePhone;
+
+    // Active Ticket Shortcut Views
+    private MaterialCardView cardActiveTicketShortcut;
+    private TextView tvShortcutDetails;
+    private Button btnViewActiveTicket;
 
     // Real-time Ticker Handler
     private final Handler tickerHandler = new Handler(Looper.getMainLooper());
@@ -49,6 +57,11 @@ public class VehicleSelectionActivity extends AppCompatActivity {
         tvWelcomeUser = findViewById(R.id.tvWelcomeUser);
         tvUserProfileVehicle = findViewById(R.id.tvUserProfileVehicle);
         tvUserProfilePhone = findViewById(R.id.tvUserProfilePhone);
+
+        // Active Ticket Shortcut
+        cardActiveTicketShortcut = findViewById(R.id.cardActiveTicketShortcut);
+        tvShortcutDetails = findViewById(R.id.tvShortcutDetails);
+        btnViewActiveTicket = findViewById(R.id.btnViewActiveTicket);
 
         MaterialCardView cardTwoWheeler = findViewById(R.id.cardTwoWheeler);
         MaterialCardView cardFourWheeler = findViewById(R.id.cardFourWheeler);
@@ -103,20 +116,49 @@ public class VehicleSelectionActivity extends AppCompatActivity {
                 tvWelcomeUser.setText("Welcome, Manager!");
                 tvUserProfileVehicle.setText("🔐 Role: Admin / Manager");
                 tvUserProfilePhone.setText("admin@parksmart.com");
+                if (cardActiveTicketShortcut != null) {
+                    cardActiveTicketShortcut.setVisibility(View.GONE);
+                }
             } else {
                 tvWelcomeUser.setText("Welcome, " + sessionManager.getUserName() + "!");
                 String typeIcon = DatabaseHelper.TYPE_BIKE.equalsIgnoreCase(sessionManager.getUserVehicleType()) ? "🏍️ Bike: " : "🚗 Car: ";
                 tvUserProfileVehicle.setText(typeIcon + sessionManager.getUserVehicleNumber());
                 tvUserProfilePhone.setText("📞 +91 " + sessionManager.getUserPhone());
 
-                // Auto-sync current active user session to users table and Firestore
+                // Auto-sync active user session
                 User currentUser = new User(0, sessionManager.getUserName(), sessionManager.getUserEmail(), sessionManager.getUserPhone(), sessionManager.getUserVehicleNumber(), sessionManager.getUserVehicleType(), System.currentTimeMillis());
                 dbHelper.registerUser(currentUser);
+
+                // Check for active booked slots for shortcut
+                checkActiveUserShortcut();
             }
         } else {
             tvWelcomeUser.setText("Welcome, Guest!");
             tvUserProfileVehicle.setText("🚘 No Vehicle Profile Set");
             tvUserProfilePhone.setText("");
+            if (cardActiveTicketShortcut != null) {
+                cardActiveTicketShortcut.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    private void checkActiveUserShortcut() {
+        if (sessionManager == null || !sessionManager.isLoggedIn() || sessionManager.isAdmin()) {
+            if (cardActiveTicketShortcut != null) cardActiveTicketShortcut.setVisibility(View.GONE);
+            return;
+        }
+
+        List<ParkingSlot> activeSlots = dbHelper.getUsersActiveSlots(sessionManager.getUserPhone());
+        if (!activeSlots.isEmpty()) {
+            ParkingSlot activeSlot = activeSlots.get(0);
+            cardActiveTicketShortcut.setVisibility(View.VISIBLE);
+            tvShortcutDetails.setText("Slot #" + activeSlot.getSlotNumber() + " (" + activeSlot.getVehicleType() + ") | Vehicle: " + activeSlot.getVehicleNumber());
+
+            View.OnClickListener openShortcut = v -> openParkingSlots(activeSlot.getVehicleType());
+            cardActiveTicketShortcut.setOnClickListener(openShortcut);
+            btnViewActiveTicket.setOnClickListener(openShortcut);
+        } else {
+            cardActiveTicketShortcut.setVisibility(View.GONE);
         }
     }
 
@@ -146,6 +188,10 @@ public class VehicleSelectionActivity extends AppCompatActivity {
 
         tvBikeAvailableCount.setText(bikeAvailable + " / " + bikeTotal + " Slots Available");
         tvCarAvailableCount.setText(carAvailable + " / " + carTotal + " Slots Available");
+
+        if (sessionManager != null && sessionManager.isLoggedIn() && !sessionManager.isAdmin()) {
+            checkActiveUserShortcut();
+        }
     }
 
     private void openParkingSlots(String vehicleType) {

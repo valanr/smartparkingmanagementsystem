@@ -203,6 +203,32 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return list;
     }
 
+    public List<ParkingSlot> getUsersActiveSlots(String phone) {
+        checkAndAutoCheckoutExpiredSlots();
+
+        List<ParkingSlot> list = new ArrayList<>();
+        if (phone == null || phone.isEmpty()) return list;
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_SLOTS + " WHERE " + COLUMN_PHONE_NUMBER + " = ? AND " + COLUMN_IS_OCCUPIED + " = 1", new String[]{phone});
+        if (cursor.moveToFirst()) {
+            do {
+                int slotNum = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_SLOT_NUMBER));
+                String vType = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_VEHICLE_TYPE));
+                String vehicleNum = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_VEHICLE_NUMBER));
+                String phoneNum = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PHONE_NUMBER));
+                int hours = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_BOOKING_HOURS));
+                long entryTime = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_ENTRY_TIME));
+                String payId = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PAYMENT_ID));
+                String payStatus = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PAYMENT_STATUS));
+
+                list.add(new ParkingSlot(slotNum, vType, true, vehicleNum, phoneNum, hours, entryTime, payId, payStatus));
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return list;
+    }
+
     private void ensureDefaultSlots(SQLiteDatabase db) {
         Cursor countCursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_SLOTS, null);
         int count = 0;

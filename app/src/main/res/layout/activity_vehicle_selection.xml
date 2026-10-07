@@ -118,6 +118,66 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- Active Booking Shortcut Card (Visible when user has active booking) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardActiveTicketShortcut"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/slot_occupied_bg"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:strokeColor="@color/slot_occupied_stroke"
+                app:strokeWidth="1.5dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvShortcutTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🎟️ Active Parking Ticket"
+                            android:textColor="@color/slot_occupied_text"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvShortcutDetails"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Slot #1 (CAR) | Vehicle: MH12AB1234"
+                            android:textColor="#B71C1C"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnViewActiveTicket"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:backgroundTint="@color/slot_occupied_stroke"
+                        android:text="View Ticket →"
+                        android:textSize="12sp"
+                        app:cornerRadius="8dp" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Card 1: Two Wheeler (Bike) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardTwoWheeler"
