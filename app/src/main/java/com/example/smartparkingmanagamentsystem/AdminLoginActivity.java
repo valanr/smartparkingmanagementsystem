@@ -11,6 +11,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.textfield.TextInputLayout;
 
+import java.util.Locale;
+
 public class AdminLoginActivity extends AppCompatActivity {
 
     private SessionManager sessionManager;
@@ -46,11 +48,11 @@ public class AdminLoginActivity extends AppCompatActivity {
         tilAdminEmail.setError(null);
         tilAdminPassword.setError(null);
 
-        String email = etAdminEmail.getText().toString().trim();
+        String email = etAdminEmail.getText().toString().trim().toLowerCase(Locale.ROOT);
         String password = etAdminPassword.getText().toString().trim();
 
         if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            tilAdminEmail.setError("Enter a valid admin email");
+            tilAdminEmail.setError("Enter a valid authority email");
             etAdminEmail.requestFocus();
             return;
         }
@@ -61,17 +63,30 @@ public class AdminLoginActivity extends AppCompatActivity {
             return;
         }
 
-        // Demo Admin credentials check
-        if ("admin@parksmart.com".equalsIgnoreCase(email) && "admin123".equals(password)) {
-            sessionManager.createAdminSession(email);
-            Toast.makeText(this, "Manager Login Successful!", Toast.LENGTH_SHORT).show();
+        String matchedEntId = null;
+        if ("nexus@parksmart.com".equals(email) && ("nexus123".equals(password) || "admin123".equals(password))) {
+            matchedEntId = "ent_nexus_mall";
+        } else if ("hyatt@parksmart.com".equals(email) && ("hyatt123".equals(password) || "admin123".equals(password))) {
+            matchedEntId = "ent_grand_hyatt";
+        } else if ("pvr@parksmart.com".equals(email) && ("pvr123".equals(password) || "admin123".equals(password))) {
+            matchedEntId = "ent_pvr_imax";
+        } else if ("techpark@parksmart.com".equals(email) && ("techpark123".equals(password) || "admin123".equals(password))) {
+            matchedEntId = "ent_techpark";
+        } else if ("admin@parksmart.com".equals(email) && "admin123".equals(password)) {
+            matchedEntId = "ent_nexus_mall";
+        }
+
+        if (matchedEntId != null) {
+            sessionManager.createAdminSession(email, matchedEntId);
+            Toast.makeText(this, "Enterprise Authority Login Successful!", Toast.LENGTH_SHORT).show();
 
             Intent intent = new Intent(AdminLoginActivity.this, VehicleSelectionActivity.class);
+            intent.putExtra(EnterpriseSearchActivity.EXTRA_ENTERPRISE_ID, matchedEntId);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
             finish();
         } else {
-            tilAdminPassword.setError("Invalid admin credentials (Use: admin@parksmart.com / admin123)");
+            tilAdminPassword.setError("Invalid credentials! Check authority email & password.");
             etAdminPassword.requestFocus();
         }
     }

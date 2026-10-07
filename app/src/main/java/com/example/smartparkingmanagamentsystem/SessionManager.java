@@ -13,6 +13,7 @@ public class SessionManager {
     private static final String KEY_VEHICLE_NO = "userVehicleNo";
     private static final String KEY_VEHICLE_TYPE = "userVehicleType";
     private static final String KEY_ROLE = "userRole";
+    private static final String KEY_ADMIN_ENT_ID = "adminEnterpriseId";
 
     // Backup keys for switching roles
     private static final String KEY_SAVED_NAME = "savedName";
@@ -51,7 +52,7 @@ public class SessionManager {
         editor.apply();
     }
 
-    public void createAdminSession(String email) {
+    public void createAdminSession(String email, String enterpriseId) {
         // Backup current user profile if present
         if (ROLE_USER.equalsIgnoreCase(pref.getString(KEY_ROLE, ROLE_USER))) {
             editor.putString(KEY_SAVED_NAME, pref.getString(KEY_NAME, "User"));
@@ -68,6 +69,7 @@ public class SessionManager {
         editor.putString(KEY_VEHICLE_NO, "");
         editor.putString(KEY_VEHICLE_TYPE, DatabaseHelper.TYPE_CAR);
         editor.putString(KEY_ROLE, ROLE_ADMIN);
+        editor.putString(KEY_ADMIN_ENT_ID, enterpriseId != null ? enterpriseId : "ent_nexus_mall");
         editor.apply();
     }
 
@@ -92,6 +94,10 @@ public class SessionManager {
 
     public boolean isAdmin() {
         return ROLE_ADMIN.equalsIgnoreCase(pref.getString(KEY_ROLE, ROLE_USER));
+    }
+
+    public String getAdminEnterpriseId() {
+        return pref.getString(KEY_ADMIN_ENT_ID, "ent_nexus_mall");
     }
 
     public String getUserName() {
